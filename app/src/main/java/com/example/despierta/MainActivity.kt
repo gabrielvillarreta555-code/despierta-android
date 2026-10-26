@@ -56,6 +56,15 @@ class MainActivity : ComponentActivity() {
         var hapticsEnabled by rememberSaveable {
             mutableStateOf(uiPreferences.getBoolean("haptics_enabled", true))
         }
+        // Preferencia visual de la pantalla de sueño; no interviene en la programación de alarmas.
+        var sleepPlan by remember {
+            mutableStateOf(
+                SleepPlan(
+                    bedMinutes = uiPreferences.getInt(PREF_SLEEP_BED, SleepPlan.DEFAULT.bedMinutes),
+                    wakeMinutes = uiPreferences.getInt(PREF_SLEEP_WAKE, SleepPlan.DEFAULT.wakeMinutes)
+                )
+            )
+        }
 
         val notificationPermission = rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission()
@@ -192,6 +201,19 @@ class MainActivity : ComponentActivity() {
                         Uri.parse("package:$packageName")
                     )
                 },
+                sleepPlan = sleepPlan,
+                onSleepPlanChanged = { plan ->
+                    sleepPlan = plan
+                    uiPreferences.edit()
+                        .putInt(PREF_SLEEP_BED, plan.bedMinutes)
+                        .putInt(PREF_SLEEP_WAKE, plan.wakeMinutes)
+                        .apply()
+                },
+                onCreateWakeAlarm = { hour, minute ->
+                    feedback()
+                    // Abre el editor existente: es el editor quien guarda y programa la alarma.
+                    draft = store.newAlarm().copy(hour = hour, minute = minute, label = "Despertar")
+                },
                 onRequestAlarmChannel = {
                     runCatching {
                         startActivity(
@@ -228,6 +250,8 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
+        private const val PREF_SLEEP_BED = "sleep_bed_minutes"
+        private const val PREF_SLEEP_WAKE = "sleep_wake_minutes"
         internal const val EXTRA_DISABLE_LIVE_CLOCK_FOR_TESTS =
             "com.example.despierta.extra.DISABLE_LIVE_CLOCK_FOR_TESTS"
         // Inlined strings keep the guarded settings actions safe on the minSdk 26 code path.

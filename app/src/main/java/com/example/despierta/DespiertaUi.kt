@@ -9,11 +9,11 @@ import android.text.format.DateFormat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,6 +38,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -54,6 +55,7 @@ import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.NightsStay
 import androidx.compose.material.icons.rounded.NotificationsActive
@@ -75,8 +77,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -102,9 +102,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -114,10 +120,10 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import java.util.TimeZone
 
 internal enum class AppSection(val label: String, val icon: ImageVector) {
     ALARMS("Alarmas", Icons.Rounded.Alarm),
+    SLEEP("Sueño", Icons.Rounded.Bedtime),
     SHIFTS("Turnos", Icons.Rounded.WorkHistory),
     SETTINGS("Ajustes", Icons.Rounded.Settings)
 }
@@ -155,7 +161,10 @@ internal fun DespiertaApp(
     onRequestExactAlarm: () -> Unit,
     onRequestNotifications: () -> Unit,
     onRequestFullScreen: () -> Unit,
-    onRequestAlarmChannel: () -> Unit
+    onRequestAlarmChannel: () -> Unit,
+    sleepPlan: SleepPlan = SleepPlan.DEFAULT,
+    onSleepPlanChanged: (SleepPlan) -> Unit = {},
+    onCreateWakeAlarm: (hour: Int, minute: Int) -> Unit = { _, _ -> }
 ) {
     var nowMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
     DisposableEffect(liveClockUpdates) {
@@ -175,62 +184,85 @@ internal fun DespiertaApp(
         onDispose { handler.removeCallbacks(ticker) }
     }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = { BrandBar() },
-        bottomBar = {
-            AppNavigation(
-                selected = section,
-                permissionCount = permissionState.pendingCount,
-                onSelected = onSectionSelected
-            )
-        },
-        floatingActionButton = {
-            if (section != AppSection.SETTINGS) {
-                ExtendedFloatingActionButton(
-                    onClick = if (section == AppSection.SHIFTS) onAddShiftAlarm else onAddAlarm,
-                    icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
-                    text = { Text(if (section == AppSection.SHIFTS) "Nuevo turno" else "Nueva alarma") },
-                    modifier = Modifier.testTag("add_alarm")
+    Box(Modifier.fillMaxSize().background(NightBackgroundBrush)) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            topBar = { BrandBar() },
+            bottomBar = {
+                AppNavigation(
+                    selected = section,
+                    permissionCount = permissionState.pendingCount,
+                    onSelected = onSectionSelected
                 )
+            },
+            floatingActionButton = {
+                if (section == AppSection.ALARMS || section == AppSection.SHIFTS) {
+                    ExtendedFloatingActionButton(
+                        onClick = if (section == AppSection.SHIFTS) onAddShiftAlarm else onAddAlarm,
+                        icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
+                        text = {
+                            Text(
+                                if (section == AppSection.SHIFTS) "Nuevo turno" else "Nueva alarma",
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        },
+                        containerColor = Lavender,
+                        contentColor = OnLavender,
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier.testTag("add_alarm")
+                    )
+                }
             }
-        }
-    ) { innerPadding ->
-        Crossfade(
-            targetState = section,
-            animationSpec = tween(180),
-            label = "section",
-            modifier = Modifier.fillMaxSize().padding(innerPadding)
-        ) { selected ->
-            when (selected) {
-                AppSection.ALARMS -> AlarmHome(
-                    alarms = alarms,
-                    nowMillis = nowMillis,
-                    onAddAlarm = onAddAlarm,
-                    onEditAlarm = onEditAlarm,
-                    onToggleAlarm = onToggleAlarm,
-                    onDeleteAlarm = onDeleteAlarm
-                )
+        ) { innerPadding ->
+            Crossfade(
+                targetState = section,
+                animationSpec = tween(180),
+                label = "section",
+                modifier = Modifier.fillMaxSize().padding(innerPadding)
+            ) { selected ->
+                when (selected) {
+                    AppSection.ALARMS -> AlarmHome(
+                        alarms = alarms,
+                        nowMillis = nowMillis,
+                        sleepPlan = sleepPlan,
+                        animated = liveClockUpdates,
+                        onAddAlarm = onAddAlarm,
+                        onEditAlarm = onEditAlarm,
+                        onToggleAlarm = onToggleAlarm,
+                        onDeleteAlarm = onDeleteAlarm,
+                        onOpenSleep = { onSectionSelected(AppSection.SLEEP) }
+                    )
 
-                AppSection.SHIFTS -> ShiftScreen(
-                    alarms = alarms,
-                    nowMillis = nowMillis,
-                    onAddShiftAlarm = onAddShiftAlarm,
-                    onEditAlarm = onEditAlarm,
-                    onToggleAlarm = onToggleAlarm
-                )
+                    AppSection.SLEEP -> SleepScreen(
+                        plan = sleepPlan,
+                        alarms = alarms,
+                        nowMillis = nowMillis,
+                        hapticsEnabled = hapticsEnabled,
+                        onPlanChanged = onSleepPlanChanged,
+                        onCreateWakeAlarm = onCreateWakeAlarm,
+                        onBack = { onSectionSelected(AppSection.ALARMS) }
+                    )
 
-                AppSection.SETTINGS -> SettingsScreen(
-                    permissionState = permissionState,
-                    hapticsEnabled = hapticsEnabled,
-                    onHapticsChanged = onHapticsChanged,
-                    onRequestExactAlarm = onRequestExactAlarm,
-                    onRequestNotifications = onRequestNotifications,
-                    onRequestFullScreen = onRequestFullScreen,
-                    onRequestAlarmChannel = onRequestAlarmChannel
-                )
+                    AppSection.SHIFTS -> ShiftScreen(
+                        alarms = alarms,
+                        nowMillis = nowMillis,
+                        onAddShiftAlarm = onAddShiftAlarm,
+                        onEditAlarm = onEditAlarm,
+                        onToggleAlarm = onToggleAlarm
+                    )
+
+                    AppSection.SETTINGS -> SettingsScreen(
+                        permissionState = permissionState,
+                        hapticsEnabled = hapticsEnabled,
+                        onHapticsChanged = onHapticsChanged,
+                        onRequestExactAlarm = onRequestExactAlarm,
+                        onRequestNotifications = onRequestNotifications,
+                        onRequestFullScreen = onRequestFullScreen,
+                        onRequestAlarmChannel = onRequestAlarmChannel
+                    )
+                }
             }
         }
     }
@@ -238,78 +270,110 @@ internal fun DespiertaApp(
 
 @Composable
 private fun BrandBar() {
-    Surface(color = MaterialTheme.colorScheme.background) {
-        Row(
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .height(62.dp)
+            .padding(horizontal = 20.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
             Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .height(62.dp)
-                .padding(horizontal = 18.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .size(38.dp)
+                .clip(RoundedCornerShape(13.dp))
+                .background(LavenderBrush),
+            contentAlignment = Alignment.Center
         ) {
-            Surface(
-                modifier = Modifier.size(38.dp),
-                shape = RoundedCornerShape(13.dp),
-                color = DespiertaAccent
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        Icons.Rounded.NightsStay,
-                        contentDescription = null,
-                        tint = DespiertaOnAccent,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-            }
-            Spacer(Modifier.width(11.dp))
-            Column {
-                Text(
-                    "DESPIERTA",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 2.2.sp
-                )
-                Text(
-                    "Tu tiempo, bajo control",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 11.sp
-                )
-            }
-            Spacer(Modifier.weight(1f))
-            Surface(
-                shape = RoundedCornerShape(50),
-                color = MaterialTheme.colorScheme.surfaceVariant
-            ) {
-                Text(
-                    BuildConfig.VERSION_NAME,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                    color = DespiertaAccent,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 11.sp
-                )
-            }
+            Icon(
+                Icons.Rounded.NightsStay,
+                contentDescription = null,
+                tint = OnLavender,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+        Spacer(Modifier.width(11.dp))
+        Column {
+            Text(
+                "DESPIERTA",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 2.4.sp
+            )
+            Text(
+                "Tu tiempo, bajo control",
+                color = TextSoft,
+                fontSize = 11.sp
+            )
+        }
+        Spacer(Modifier.weight(1f))
+        Box(
+            Modifier
+                .clip(RoundedCornerShape(50))
+                .background(Color.White.copy(alpha = 0.08f))
+                .border(1.dp, Lavender.copy(alpha = 0.35f), RoundedCornerShape(50))
+        ) {
+            Text(
+                BuildConfig.VERSION_NAME,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                color = Lavender,
+                fontWeight = FontWeight.Bold,
+                fontSize = 11.sp
+            )
         }
     }
 }
 
+/** Barra inferior flotante en forma de píldora, como en la referencia. */
 @Composable
 private fun AppNavigation(
     selected: AppSection,
     permissionCount: Int,
     onSelected: (AppSection) -> Unit
 ) {
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 0.dp,
-        modifier = Modifier.navigationBarsPadding()
+    val shape = RoundedCornerShape(28.dp)
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 10.dp)
     ) {
-        AppSection.entries.forEach { section ->
-            NavigationBarItem(
-                selected = selected == section,
-                onClick = { onSelected(section) },
-                icon = {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .background(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFF2A2150), Color(0xFF3A2D66))))
+                .border(1.dp, Color.White.copy(alpha = 0.08f), shape)
+                .padding(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AppSection.entries.forEach { section ->
+                val isSelected = selected == section
+                val itemShape = RoundedCornerShape(22.dp)
+                Row(
+                    Modifier
+                        .weight(if (isSelected) 1.6f else 1f)
+                        .height(48.dp)
+                        .clip(itemShape)
+                        .then(if (isSelected) Modifier.background(LavenderBrush) else Modifier)
+                        .selectable(
+                            selected = isSelected,
+                            onClick = { onSelected(section) },
+                            role = Role.Tab
+                        )
+                        .semantics { contentDescription = section.label }
+                        .testTag("nav_${section.name.lowercase()}"),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box {
-                        Icon(section.icon, contentDescription = null)
+                        Icon(
+                            section.icon,
+                            contentDescription = null,
+                            tint = if (isSelected) OnLavender else TextSoft,
+                            modifier = Modifier.size(22.dp)
+                        )
                         if (section == AppSection.SETTINGS && permissionCount > 0) {
                             Box(
                                 Modifier
@@ -320,10 +384,18 @@ private fun AppNavigation(
                             )
                         }
                     }
-                },
-                label = { Text(section.label) },
-                modifier = Modifier.testTag("nav_${section.name.lowercase()}")
-            )
+                    if (isSelected) {
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            section.label,
+                            color = OnLavender,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -332,22 +404,32 @@ private fun AppNavigation(
 private fun AlarmHome(
     alarms: List<AlarmModel>,
     nowMillis: Long,
+    sleepPlan: SleepPlan,
+    animated: Boolean,
     onAddAlarm: () -> Unit,
     onEditAlarm: (AlarmModel) -> Unit,
     onToggleAlarm: (AlarmModel, Boolean) -> Unit,
-    onDeleteAlarm: (AlarmModel) -> Unit
+    onDeleteAlarm: (AlarmModel) -> Unit,
+    onOpenSleep: () -> Unit
 ) {
     val next = remember(alarms, nowMillis / 1_000L) { findNextAlarm(alarms, nowMillis) }
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag("alarm_home"),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 110.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item { TimeHero(nowMillis = nowMillis, next = next) }
-        item { SleepDurationCard(nowMillis = nowMillis, next = next) }
+        item { TimeHero(nowMillis = nowMillis, next = next, animated = animated) }
+        item {
+            SleepDurationCard(
+                nowMillis = nowMillis,
+                next = next,
+                sleepPlan = sleepPlan,
+                onOpenSleep = onOpenSleep
+            )
+        }
         item {
             SectionHeading(
-                title = "Tus alarmas",
+                title = "Alarmas",
                 detail = "${alarms.count { it.enabled }} activas · ${alarms.size} en total"
             )
         }
@@ -366,8 +448,28 @@ private fun AlarmHome(
     }
 }
 
+/** "7 h 30 min" con los números grandes y las unidades pequeñas. */
+private fun styledDuration(text: String, bigSize: Int, smallSize: Int) = buildAnnotatedString {
+    text.split(" ").forEachIndexed { index, part ->
+        if (index > 0) append(" ")
+        val isNumber = part.firstOrNull()?.isDigit() == true
+        withStyle(
+            SpanStyle(
+                fontSize = if (isNumber) bigSize.sp else smallSize.sp,
+                fontWeight = if (isNumber) FontWeight.Bold else FontWeight.Normal,
+                color = if (isNumber) Color.White else TextSoft
+            )
+        ) { append(part) }
+    }
+}
+
 @Composable
-private fun SleepDurationCard(nowMillis: Long, next: AlarmOccurrence?) {
+private fun SleepDurationCard(
+    nowMillis: Long,
+    next: AlarmOccurrence?,
+    sleepPlan: SleepPlan,
+    onOpenSleep: () -> Unit
+) {
     val remainingMillis = next?.triggerAtMillis?.minus(nowMillis)
     val sleepWindow = remainingMillis?.let(::formatSleepDuration)
     val guidance = when {
@@ -378,122 +480,144 @@ private fun SleepDurationCard(nowMillis: Long, next: AlarmOccurrence?) {
             "Una ventana dentro de la referencia general de 7 a 9 horas para adultos."
         else -> "Aún tienes tiempo para preparar una rutina tranquila antes de acostarte."
     }
+    val is24Hour = DateFormat.is24HourFormat(LocalContext.current)
 
-    Card(
+    GlowCard(
         modifier = Modifier.fillMaxWidth().testTag("sleep_duration_card"),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = DespiertaSleepSurface),
-        border = BorderStroke(1.dp, DespiertaSky.copy(alpha = 0.32f))
+        corner = 24.dp,
+        contentPadding = 18.dp
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 15.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                modifier = Modifier.size(48.dp),
-                shape = RoundedCornerShape(16.dp),
-                color = DespiertaSky.copy(alpha = 0.14f)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        Icons.Rounded.Bedtime,
-                        contentDescription = null,
-                        tint = DespiertaSky,
-                        modifier = Modifier.size(25.dp)
-                    )
-                }
-            }
-            Spacer(Modifier.width(13.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
+                Text("Descanso estimado", color = TextSoft, fontSize = 12.sp)
                 Text(
-                    "DESCANSO ESTIMADO",
-                    color = DespiertaSky,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.9.sp
-                )
-                Text(
-                    sleepWindow ?: "Sin próxima alarma",
-                    fontSize = if (sleepWindow == null) 18.sp else 27.sp,
-                    lineHeight = 30.sp,
-                    fontWeight = FontWeight.Bold,
+                    if (sleepWindow == null) {
+                        styledDuration("Sin próxima alarma", 18, 18)
+                    } else {
+                        styledDuration(sleepWindow, 38, 16)
+                    },
+                    lineHeight = 42.sp,
                     modifier = Modifier.testTag("sleep_duration_value")
                 )
-                Text(
-                    guidance,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 11.sp,
-                    lineHeight = 15.sp
-                )
             }
+            Box(
+                Modifier
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .border(1.dp, Lavender.copy(alpha = 0.7f), RoundedCornerShape(14.dp))
+            ) {
+                IconButton(
+                    onClick = onOpenSleep,
+                    modifier = Modifier.fillMaxSize().testTag("open_sleep_planner")
+                ) {
+                    Icon(Icons.Rounded.EditNote, contentDescription = "Configurar horas de sueño", tint = LavenderSoft)
+                }
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(guidance, color = TextSoft, fontSize = 11.sp, lineHeight = 15.sp)
+        Spacer(Modifier.height(12.dp))
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color.White.copy(alpha = 0.05f))
+                .clickable(onClick = onOpenSleep)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(Modifier.size(10.dp).clip(CircleShape).background(DuskBlue))
+            Spacer(Modifier.width(8.dp))
+            Text(formatMinuteOfDay(sleepPlan.bedMinutes, is24Hour), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text("  →  ", color = TextSoft, fontSize = 13.sp)
+            Box(Modifier.size(10.dp).clip(CircleShape).background(DawnOrange))
+            Spacer(Modifier.width(8.dp))
+            Text(formatMinuteOfDay(sleepPlan.wakeMinutes, is24Hour), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.weight(1f))
+            Text(
+                "Plan · %d h %02d".format(sleepPlan.durationMinutes / 60, sleepPlan.durationMinutes % 60),
+                color = Lavender,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
 
 @Composable
-private fun TimeHero(nowMillis: Long, next: AlarmOccurrence?) {
+private fun TimeHero(nowMillis: Long, next: AlarmOccurrence?, animated: Boolean) {
     val now = Instant.ofEpochMilli(nowMillis).atZone(ZoneId.systemDefault())
-    Card(
-        shape = RoundedCornerShape(26.dp),
-        colors = CardDefaults.cardColors(containerColor = DespiertaHero),
-        border = BorderStroke(1.dp, DespiertaAccent.copy(alpha = 0.24f)),
-        modifier = Modifier.fillMaxWidth()
+    GlowCard(
+        modifier = Modifier.fillMaxWidth(),
+        brush = HeroBrush,
+        corner = 30.dp,
+        borderColor = Lavender.copy(alpha = 0.22f)
     ) {
-        Column(Modifier.padding(horizontal = 20.dp, vertical = 17.dp)) {
+        Box(Modifier.fillMaxWidth()) {
+            MoonWithStars(
+                modifier = Modifier
+                    .size(150.dp)
+                    .align(Alignment.TopCenter)
+                    .padding(top = 8.dp),
+                animated = animated
+            )
+        }
+        Column(Modifier.padding(start = 22.dp, end = 22.dp, bottom = 18.dp)) {
             Text(
                 formatCivilDate(now.toLocalDate()),
-                color = DespiertaAccent,
+                color = LavenderSoft,
                 fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.7.sp
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.6.sp
             )
-            Text(
-                now.format(DateTimeFormatter.ofPattern("HH:mm:ss")),
-                fontSize = 56.sp,
-                lineHeight = 60.sp,
-                fontWeight = FontWeight.Light,
-                letterSpacing = (-1).sp,
+            Row(
+                verticalAlignment = Alignment.Bottom,
                 modifier = Modifier.testTag("live_clock")
-            )
-            HorizontalDivider(
-                Modifier.padding(vertical = 11.dp),
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
-            )
-            if (next == null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            ) {
+                Text(
+                    now.format(DateTimeFormatter.ofPattern("HH:mm")),
+                    fontSize = 64.sp,
+                    lineHeight = 66.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-1).sp
+                )
+                Text(
+                    now.format(DateTimeFormatter.ofPattern(":ss")),
+                    fontSize = 22.sp,
+                    color = TextSoft,
+                    modifier = Modifier.padding(start = 2.dp, bottom = 10.dp)
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color.Black.copy(alpha = 0.22f))
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Lavender.copy(alpha = 0.18f)),
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(
-                        Icons.Rounded.Schedule,
+                        if (next == null) Icons.Rounded.Schedule else Icons.Rounded.Alarm,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
+                        tint = Lavender,
+                        modifier = Modifier.size(21.dp)
                     )
-                    Spacer(Modifier.width(9.dp))
-                    Column {
-                        Text("Sin próximo despertar", fontWeight = FontWeight.SemiBold)
-                        Text(
-                            "Crea o activa una alarma",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 12.sp
-                        )
-                    }
                 }
-            } else {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        shape = CircleShape,
-                        color = DespiertaAccent.copy(alpha = 0.14f),
-                        modifier = Modifier.size(42.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                Icons.Rounded.Alarm,
-                                contentDescription = null,
-                                tint = DespiertaAccent,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
+                Spacer(Modifier.width(11.dp))
+                if (next == null) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Sin próximo despertar", fontWeight = FontWeight.SemiBold)
+                        Text("Crea o activa una alarma", color = TextSoft, fontSize = 12.sp)
                     }
-                    Spacer(Modifier.width(11.dp))
+                } else {
                     Column(Modifier.weight(1f)) {
                         Text(
                             next.alarm.label,
@@ -501,14 +625,10 @@ private fun TimeHero(nowMillis: Long, next: AlarmOccurrence?) {
                             overflow = TextOverflow.Ellipsis,
                             fontWeight = FontWeight.SemiBold
                         )
-                        Text(
-                            formatOccurrence(next.triggerAtMillis),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 12.sp
-                        )
+                        Text(formatOccurrence(next.triggerAtMillis), color = TextSoft, fontSize = 12.sp)
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        Text("FALTAN", color = DespiertaAccent, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text("FALTAN", color = Lavender, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)
                         Text(
                             formatCountdown(next.triggerAtMillis - nowMillis),
                             fontWeight = FontWeight.Bold,
@@ -525,11 +645,11 @@ private fun TimeHero(nowMillis: Long, next: AlarmOccurrence?) {
 @Composable
 private fun SectionHeading(title: String, detail: String) {
     Row(
-        Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 2.dp),
+        Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 0.dp, start = 4.dp, end = 4.dp),
         verticalAlignment = Alignment.Bottom
     ) {
-        Text(title, fontWeight = FontWeight.Bold, fontSize = 20.sp, modifier = Modifier.weight(1f))
-        Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+        Text(title, fontWeight = FontWeight.SemiBold, fontSize = 18.sp, modifier = Modifier.weight(1f))
+        Text(detail, color = TextSoft, fontSize = 11.sp)
     }
 }
 
@@ -541,33 +661,26 @@ private fun AlarmCard(
     onDelete: () -> Unit
 ) {
     val active = alarm.enabled || alarm.snoozedUntilMillis != null
-    val containerColor by animateColorAsState(
-        targetValue = if (active) DespiertaActiveSurface else MaterialTheme.colorScheme.surface,
-        animationSpec = tween(160),
-        label = "alarm_card"
-    )
-    Card(
+    GlowCard(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).animateContentSize(),
-        shape = RoundedCornerShape(19.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        border = BorderStroke(
-            1.dp,
-            if (active) DespiertaAccent.copy(alpha = 0.34f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
-        )
+        brush = if (active) ActiveCardBrush else CardBrush,
+        corner = 22.dp,
+        borderColor = if (active) Lavender.copy(alpha = 0.30f) else Color.White.copy(alpha = 0.06f)
     ) {
-        Column(Modifier.padding(start = 16.dp, top = 12.dp, end = 8.dp, bottom = 8.dp)) {
+        Column(Modifier.padding(start = 18.dp, top = 12.dp, end = 10.dp, bottom = 6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "%02d:%02d".format(alarm.hour, alarm.minute),
-                    fontSize = 40.sp,
-                    lineHeight = 42.sp,
-                    fontWeight = FontWeight.Light,
-                    color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                    fontSize = 38.sp,
+                    lineHeight = 40.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (active) Color.White else TextSoft.copy(alpha = 0.7f)
                 )
                 Spacer(Modifier.weight(1f))
                 Switch(
                     checked = alarm.enabled,
                     onCheckedChange = onToggle,
+                    colors = despiertaSwitchColors(),
                     modifier = Modifier.testTag("alarm_toggle_${alarm.id}")
                 )
             }
@@ -575,25 +688,29 @@ private fun AlarmCard(
                 Column(Modifier.weight(1f)) {
                     Text(
                         alarm.label,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 14.sp,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        color = if (active) Color.White else TextSoft
                     )
                     Text(
                         alarmScheduleLabel(alarm),
-                        color = if (active) DespiertaAccent else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (active) Lavender else TextSoft.copy(alpha = 0.7f),
                         fontSize = 12.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
                 if (alarm.mathChallengeEnabled) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(50)
+                    Box(
+                        Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(Lavender.copy(alpha = 0.16f))
                     ) {
                         Text(
                             "DESAFÍO",
+                            color = LavenderSoft,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             fontSize = 8.sp,
                             fontWeight = FontWeight.Bold
@@ -604,7 +721,7 @@ private fun AlarmCard(
                     Icon(
                         Icons.Rounded.DeleteOutline,
                         contentDescription = "Eliminar ${alarm.label}",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = TextSoft
                     )
                 }
             }
@@ -614,20 +731,17 @@ private fun AlarmCard(
 
 @Composable
 private fun AlarmEmptyState(onAdd: () -> Unit) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(22.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f))
-    ) {
-        Row(
-            Modifier.fillMaxWidth().padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(shape = CircleShape, color = DespiertaAccent.copy(alpha = 0.12f)) {
+    GlowCard(modifier = Modifier.fillMaxWidth(), contentPadding = 20.dp) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .clip(CircleShape)
+                    .background(Lavender.copy(alpha = 0.14f))
+            ) {
                 Icon(
                     Icons.Rounded.AlarmAdd,
                     contentDescription = null,
-                    tint = DespiertaAccent,
+                    tint = Lavender,
                     modifier = Modifier.padding(13.dp).size(30.dp)
                 )
             }
@@ -636,7 +750,7 @@ private fun AlarmEmptyState(onAdd: () -> Unit) {
                 Text("Tu mañana empieza aquí", fontWeight = FontWeight.Bold, fontSize = 17.sp)
                 Text(
                     "Configura una alarma puntual, semanal o por turnos.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = TextSoft,
                     fontSize = 12.sp
                 )
             }
@@ -646,6 +760,7 @@ private fun AlarmEmptyState(onAdd: () -> Unit) {
         }
     }
 }
+
 
 @Composable
 private fun ShiftScreen(
@@ -752,7 +867,7 @@ private fun ShiftAlarmCard(
                 IconButton(onClick = onEdit, modifier = Modifier.size(48.dp)) {
                     Icon(Icons.Rounded.Edit, contentDescription = "Editar ${alarm.label}")
                 }
-                Switch(checked = alarm.enabled, onCheckedChange = onToggle)
+                Switch(checked = alarm.enabled, onCheckedChange = onToggle, colors = despiertaSwitchColors())
             }
             Text(
                 "PRÓXIMOS 14 DÍAS",
@@ -935,7 +1050,7 @@ private fun SettingsScreen(
                             fontSize = 12.sp
                         )
                     }
-                    Switch(checked = hapticsEnabled, onCheckedChange = onHapticsChanged)
+                    Switch(checked = hapticsEnabled, onCheckedChange = onHapticsChanged, colors = despiertaSwitchColors())
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f))
                 SettingsStatusRow(
@@ -1121,8 +1236,8 @@ internal fun AlarmEditor(
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
         Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
+            modifier = Modifier.fillMaxSize().background(NightBackgroundBrush),
+            color = Color.Transparent
         ) {
             Column(Modifier.safeDrawingPadding()) {
                 Row(
@@ -1218,7 +1333,7 @@ internal fun AlarmEditor(
                                 Text("Turno inteligente", fontWeight = FontWeight.SemiBold)
                                 Text("Alterna automáticamente trabajo y descanso", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                             }
-                            Switch(checked = useShift, onCheckedChange = { useShift = it })
+                            Switch(checked = useShift, onCheckedChange = { useShift = it }, colors = despiertaSwitchColors())
                         }
                         if (useShift) {
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1311,7 +1426,7 @@ internal fun AlarmEditor(
                                 Text("Desafío matemático", fontWeight = FontWeight.SemiBold)
                                 Text("Será obligatorio para detener", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                             }
-                            Switch(checked = mathChallenge, onCheckedChange = { mathChallenge = it })
+                            Switch(checked = mathChallenge, onCheckedChange = { mathChallenge = it }, colors = despiertaSwitchColors())
                         }
                         Text("Posponer", fontWeight = FontWeight.SemiBold)
                         Row(
@@ -1343,6 +1458,7 @@ internal fun AlarmEditor(
                             Switch(
                                 checked = vibrate,
                                 onCheckedChange = { vibrate = it },
+                                colors = despiertaSwitchColors(),
                                 modifier = Modifier.testTag("alarm_vibration")
                             )
                         }
@@ -1442,22 +1558,24 @@ private fun EditorSection(title: String, content: @Composable () -> Unit) {
 internal fun DespiertaTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = darkColorScheme(
-            primary = DespiertaAccent,
-            onPrimary = DespiertaOnAccent,
-            primaryContainer = Color(0xFF332B57),
-            onPrimaryContainer = Color(0xFFE9DDFF),
-            secondary = DespiertaSky,
-            onSecondary = Color(0xFF001B3D),
-            secondaryContainer = Color(0xFF18345E),
-            onSecondaryContainer = Color(0xFFD7E3FF),
-            background = Color(0xFF070B19),
-            surface = Color(0xFF101524),
-            surfaceVariant = Color(0xFF1B2136),
-            onSurface = Color(0xFFF4F1FF),
-            onSurfaceVariant = Color(0xFFBEC3D8),
-            outline = Color(0xFF555D78),
+            primary = Lavender,
+            onPrimary = OnLavender,
+            primaryContainer = Color(0xFF3A2C6E),
+            onPrimaryContainer = LavenderSoft,
+            secondary = DuskBlue,
+            onSecondary = Color(0xFF0F1B33),
+            secondaryContainer = Color(0xFF2E2560),
+            onSecondaryContainer = LavenderSoft,
+            background = NightBase,
+            surface = NightCard,
+            surfaceVariant = NightRaised,
+            surfaceContainer = NightCard,
+            surfaceContainerHigh = NightCardHigh,
+            onSurface = Color(0xFFF6F2FF),
+            onSurfaceVariant = TextSoft,
+            outline = NightOutline,
             error = Color(0xFFFFB4AB),
-            errorContainer = Color(0xFF5B2525),
+            errorContainer = Color(0xFF5B2532),
             onErrorContainer = Color(0xFFFFDAD6)
         ),
         content = content
@@ -1518,9 +1636,6 @@ internal fun formatSleepDuration(remainingMillis: Long): String {
 }
 
 private val SPANISH = Locale("es", "ES")
-private val DespiertaAccent = Color(0xFFC4B5FD)
-private val DespiertaOnAccent = Color(0xFF21153F)
-private val DespiertaSky = Color(0xFF82B1FF)
-private val DespiertaHero = Color(0xFF0D1630)
-private val DespiertaSleepSurface = Color(0xFF101B35)
-private val DespiertaActiveSurface = Color(0xFF171A34)
+private val DespiertaAccent = Lavender
+private val DespiertaOnAccent = OnLavender
+private val DespiertaHero = NightCardHigh

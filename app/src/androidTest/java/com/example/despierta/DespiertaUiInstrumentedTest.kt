@@ -62,6 +62,16 @@ class DespiertaUiInstrumentedTest {
     }
 
     @Test
+    fun sleepPlannerShowsDialAndBothTimes() {
+        composeRule.onNodeWithTag("nav_sleep").assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag("sleep_screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("sleep_dial").assertIsDisplayed()
+        composeRule.onNodeWithTag("sleep_bedtime_card").assertIsDisplayed()
+        composeRule.onNodeWithTag("sleep_wake_card").assertIsDisplayed().assertIsSelected()
+        composeRule.onNodeWithTag("sleep_bedtime_card").performClick().assertIsSelected()
+    }
+
+    @Test
     fun alarmEditorShowsWheelPickerAndManualEntry() {
         composeRule.onNodeWithTag("add_alarm").performClick()
 

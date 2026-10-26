@@ -7,6 +7,7 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,21 +22,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AlarmOn
 import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,8 +40,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -102,26 +97,11 @@ class AlarmActivity : ComponentActivity() {
             }
         }
 
-        MaterialTheme(
-            colorScheme = darkColorScheme(
-                primary = Color(0xFFC4B5FD),
-                onPrimary = Color(0xFF21153F),
-                secondary = Color(0xFF82B1FF),
-                onSecondary = Color(0xFF001B3D),
-                background = Color(0xFF070B19),
-                surface = Color(0xFF101524),
-                onSurface = Color(0xFFF4F1FF),
-                onSurfaceVariant = Color(0xFFBEC3D8)
-            )
-        ) {
+        DespiertaTheme {
             Box(
                 Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color(0xFF070B19), Color(0xFF141933))
-                        )
-                    )
+                    .background(NightBackgroundBrush)
             ) {
                 Column(
                     Modifier
@@ -147,18 +127,8 @@ class AlarmActivity : ComponentActivity() {
                         )
                     }
                     Spacer(Modifier.height(22.dp))
-                    Surface(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                        shape = CircleShape
-                    ) {
-                        Icon(
-                            Icons.Rounded.AlarmOn,
-                            contentDescription = null,
-                            modifier = Modifier.padding(20.dp).size(72.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Spacer(Modifier.height(20.dp))
+                    MoonWithStars(modifier = Modifier.size(170.dp))
+                    Spacer(Modifier.height(8.dp))
                     BoxWithConstraints(
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.Center
@@ -173,7 +143,7 @@ class AlarmActivity : ComponentActivity() {
                             color = MaterialTheme.colorScheme.onSurface,
                             fontSize = timeSize,
                             lineHeight = timeSize,
-                            fontWeight = FontWeight.Light,
+                            fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             modifier = Modifier.testTag("ringing_time")
                         )
@@ -228,6 +198,8 @@ class AlarmActivity : ComponentActivity() {
                                     "No se pudo posponer. La alarma seguirá activa para que puedas intentarlo de nuevo."
                             }
                         },
+                        colors = ButtonDefaults.buttonColors(containerColor = Lavender, contentColor = OnLavender),
+                        shape = RoundedCornerShape(22.dp),
                         modifier = Modifier.fillMaxWidth().height(60.dp).testTag("ringing_snooze")
                     ) {
                         Text("Posponer ${alarm?.snoozeMinutes ?: DEFAULT_SNOOZE_MINUTES} minutos")
@@ -243,6 +215,8 @@ class AlarmActivity : ComponentActivity() {
                     Spacer(Modifier.height(12.dp))
                     OutlinedButton(
                         onClick = { stopIfAllowed() },
+                        shape = RoundedCornerShape(22.dp),
+                        border = BorderStroke(1.5.dp, Lavender.copy(alpha = 0.7f)),
                         modifier = Modifier.fillMaxWidth().height(60.dp).testTag("ringing_stop")
                     ) {
                         Text(if (alarm?.mathChallengeEnabled == true) "Comprobar y detener" else "Detener")
