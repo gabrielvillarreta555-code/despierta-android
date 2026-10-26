@@ -84,6 +84,9 @@ class DespiertaUiInstrumentedTest {
     @Test
     fun alarmEditorAllowsSnoozeAndVibrationConfiguration() {
         composeRule.onNodeWithTag("add_alarm").performClick()
+        // Separa dos fases para que un fallo indique si Compose seguía ocupado al abrir el
+        // editor o después de desplazar su contenido.
+        composeRule.onNodeWithTag("time_wheel_hour").assertIsDisplayed()
 
         composeRule.onNodeWithTag("snooze_5").performScrollTo().assertIsSelected()
         composeRule.onNodeWithTag("snooze_15").performClick().assertIsSelected()
