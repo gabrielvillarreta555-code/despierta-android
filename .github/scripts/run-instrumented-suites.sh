@@ -20,20 +20,66 @@ collect_diagnostics() {
 }
 trap collect_diagnostics EXIT
 
+escape_annotation() {
+  sed 's/%/%25/g; s/\r//g' | awk 'BEGIN { ORS = "%0A" } { print }'
+}
+
+# Una línea por prueba fallida: Clase#prueba | primera línea de la excepción | causas.
+failed_tests() {
+  awk '
+    function flush_stack() { in_stack = 0 }
+    /^INSTRUMENTATION_STATUS: class=/ { cls = substr($0, index($0, "=") + 1); flush_stack(); next }
+    /^INSTRUMENTATION_STATUS: test=/  { tst = substr($0, index($0, "=") + 1); flush_stack(); next }
+    /^INSTRUMENTATION_STATUS: stack=/ {
+      stack = substr($0, index($0, "=") + 1); causes = ""; in_stack = 1; next
+    }
+    /^INSTRUMENTATION_STATUS_CODE: -2/ {
+      sub(/.*\./, "", cls)
+      line = cls "#" tst " | " stack
+      if (causes != "") line = line " | " causes
+      print line
+      stack = ""; causes = ""; flush_stack(); next
+    }
+    /^INSTRUMENTATION_/ { flush_stack(); next }
+    in_stack && /Caused by:/ {
+      c = $0; sub(/^[ \t]*/, "", c)
+      if (length(causes) < 600) causes = causes (causes == "" ? "" : " <- ") c
+    }
+    in_stack && /^[ \t]*at com\.example\.despierta\./ && !seen_frame[cls tst]++ {
+      f = $0; sub(/^[ \t]*/, "", f); stack = stack " [" f "]"
+    }
+  ' "$1" 2>/dev/null
+}
+
 annotation_summary() {
   local output_file="$1"
-  local summary
-  summary="$(
-    grep -E 'Error in|FAILURES|Tests run:|AssertionError|Exception|INSTRUMENTATION_(FAILED|CODE)' \
-      "$output_file" 2>/dev/null \
-      | tail -8 \
-      | tr '\n' ' ' \
-      | sed 's/%/%25/g; s/\r/%0D/g; s/$/%0A/'
-  )"
-  if [[ -z "$summary" ]]; then
-    summary="La instrumentación no devolvió una línea OK. Consulte el artefacto de diagnósticos.%0A"
-  fi
-  printf '%s' "$summary"
+  local command_status="$2"
+  local tests
+  tests="$(failed_tests "$output_file")"
+  {
+    if [[ "$command_status" -eq 124 ]]; then
+      echo "La suite superó su tiempo límite y fue detenida."
+    fi
+    if [[ -n "$tests" ]]; then
+      echo "Pruebas fallidas:"
+      echo "$tests"
+    fi
+    grep -E '^(Tests run:|OK \(|INSTRUMENTATION_(RESULT: shortMsg|FAILED|CODE))' "$output_file" 2>/dev/null | tail -4
+    if [[ -z "$tests" ]]; then
+      echo "Últimas líneas de la instrumentación (código de salida $command_status):"
+      tail -15 "$output_file" 2>/dev/null
+    fi
+  } | cut -c1-900 | head -40 | escape_annotation
+}
+
+# Fragmento de logcat de la app y del runner para la suite fallida.
+logcat_excerpt() {
+  adb logcat -d -v time 2>/dev/null \
+    | grep -E 'DespiertaAlarm|TestRunner|AndroidRuntime|FATAL|com\.example\.despierta|ForegroundService|AlarmManager.*despierta|Doze|DeviceIdle' \
+    | grep -vE 'TestRunner: (started|finished): ' \
+    | tail -45 \
+    | cut -c1-300 \
+    | escape_annotation
 }
 
 reset_app_state() {
@@ -64,7 +110,9 @@ run_suite() {
   fi
 
   failures=$((failures + 1))
-  echo "::error title=$suite_label falló en $platform_label::$(annotation_summary "$output_file")"
+  echo "::error title=$suite_label falló en $platform_label::$(annotation_summary "$output_file" "$command_status")"
+  echo "::warning title=Logcat de $suite_label ($platform_label)::$(logcat_excerpt)"
+  adb logcat -d -v threadtime > "${output_file%.txt}-logcat.txt" 2>&1 || true
 }
 
 adb logcat -c
