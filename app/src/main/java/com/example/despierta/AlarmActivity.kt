@@ -99,10 +99,11 @@ class AlarmActivity : ComponentActivity() {
         }
 
         // Misma paleta que la app principal; solo afecta a colores.
-        val palette = remember {
-            loadThemeChoice(getSharedPreferences(DESPIERTA_UI_PREFS, MODE_PRIVATE)).toPalette()
+        val themeChoice = remember {
+            loadThemeChoice(getSharedPreferences(DESPIERTA_UI_PREFS, MODE_PRIVATE))
         }
-        DespiertaTheme(palette = palette) {
+        val palette = themeChoice.toPalette()
+        DespiertaTheme(palette = palette, choice = themeChoice) {
             Box(
                 Modifier
                     .fillMaxSize()
@@ -215,7 +216,7 @@ class AlarmActivity : ComponentActivity() {
                                     "No se pudo posponer. La alarma seguirá activa para que puedas intentarlo de nuevo."
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = palette.accent, contentColor = palette.onAccent),
+                        colors = ButtonDefaults.buttonColors(containerColor = palette.button, contentColor = palette.onButton),
                         shape = RoundedCornerShape(22.dp),
                         modifier = Modifier.fillMaxWidth().height(60.dp).testTag("ringing_snooze")
                     ) {

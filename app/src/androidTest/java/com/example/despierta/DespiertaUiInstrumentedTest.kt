@@ -68,13 +68,33 @@ class DespiertaUiInstrumentedTest {
     }
 
     @Test
-    fun sleepPlannerShowsDialAndBothTimes() {
+    fun sleepScreenShowsScheduleGoalAndEditsWithWheels() {
         composeRule.onNodeWithTag("nav_sleep").assertIsDisplayed().performClick()
         composeRule.onNodeWithTag("sleep_screen").assertIsDisplayed()
-        composeRule.onNodeWithTag("sleep_dial").assertIsDisplayed()
         composeRule.onNodeWithTag("sleep_bedtime_card").assertIsDisplayed()
-        composeRule.onNodeWithTag("sleep_wake_card").assertIsDisplayed().assertIsSelected()
-        composeRule.onNodeWithTag("sleep_bedtime_card").performClick().assertIsSelected()
+        composeRule.onNodeWithTag("sleep_wake_card").assertIsDisplayed()
+        composeRule.onNodeWithTag("sleep_duration_summary").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("sleep_goal_progress").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("sleep_days").performScrollTo().assertIsDisplayed()
+
+        composeRule.onNodeWithTag("sleep_wake_card").performScrollTo().performClick().assertIsSelected()
+        composeRule.onNodeWithTag("sleep_time_editor").assertIsDisplayed()
+        composeRule.onNodeWithTag("sleep_bedtime_card").performScrollTo().performClick().assertIsSelected()
+        composeRule.onNodeWithTag("sleep_wake_card").assertIsNotSelected()
+    }
+
+    @Test
+    fun settingsAreOrganizedInCategories() {
+        composeRule.onNodeWithTag("nav_settings").performClick()
+        composeRule.onNodeWithTag("settings_screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("settings_appearance").performScrollTo().performClick()
+        composeRule.onNodeWithTag("settings_page_appearance").assertIsDisplayed()
+        composeRule.onNodeWithTag("theme_noche").performScrollTo().performClick().assertIsSelected()
+        composeRule.onNodeWithTag("settings_back").performClick()
+
+        composeRule.onNodeWithTag("settings_notifications").performScrollTo().performClick()
+        composeRule.onNodeWithTag("settings_page_notifications").assertIsDisplayed()
+        composeRule.onNodeWithTag("notify_master").assertIsDisplayed()
     }
 
     @Test

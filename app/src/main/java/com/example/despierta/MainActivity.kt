@@ -23,7 +23,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarResult
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
@@ -56,14 +60,12 @@ class MainActivity : ComponentActivity() {
         var hapticsEnabled by rememberSaveable {
             mutableStateOf(uiPreferences.getBoolean("haptics_enabled", true))
         }
-        // Preferencia visual de la pantalla de sueño; no interviene en la programación de alarmas.
-        var sleepPlan by remember {
-            mutableStateOf(
-                SleepPlan(
-                    bedMinutes = uiPreferences.getInt(PREF_SLEEP_BED, SleepPlan.DEFAULT.bedMinutes),
-                    wakeMinutes = uiPreferences.getInt(PREF_SLEEP_WAKE, SleepPlan.DEFAULT.wakeMinutes)
-                )
-            )
+        // Horario de sueño y avisos opcionales: preferencias de interfaz. No programan alarmas.
+        var sleepSchedule by remember { mutableStateOf(loadSleepSchedule(uiPreferences)) }
+        var notificationPrefs by remember { mutableStateOf(loadNotificationPrefs(uiPreferences)) }
+        var defaultSnooze by remember { mutableIntStateOf(loadDefaultSnooze(uiPreferences)) }
+        val canPostNotifications = remember(resumeSignal) {
+            ReminderScheduler.canPostNotifications(this@MainActivity)
         }
 
         // Apariencia: fondo y acento. Solo cambia colores, nunca la programación de alarmas.
@@ -79,6 +81,14 @@ class MainActivity : ComponentActivity() {
 
         LaunchedEffect(resumeSignal) {
             alarms = store.getAll()
+        }
+        // Los avisos opcionales se recalculan cuando cambian las alarmas o sus ajustes.
+        // ReminderScheduler solo lee las alarmas; nunca las programa ni las cancela.
+        LaunchedEffect(alarms, sleepSchedule, notificationPrefs) {
+            withContext(Dispatchers.IO) {
+                runCatching { ReminderScheduler.refresh(applicationContext) }
+                    .onFailure { AlarmLog.error("reminder_refresh_failed", "", it) }
+            }
         }
         LaunchedEffect(Unit) {
             if (
@@ -125,7 +135,9 @@ class MainActivity : ComponentActivity() {
             needsAlarmChannel = AlarmService.isNotificationChannelDegraded(this)
         )
 
-        DespiertaTheme(palette = themeChoice.toPalette()) {
+        fun newAlarm(): AlarmModel = store.newAlarm().copy(snoozeMinutes = defaultSnooze)
+
+        DespiertaTheme(palette = themeChoice.toPalette(), choice = themeChoice) {
             DespiertaApp(
                 alarms = alarms,
                 section = section,
@@ -142,11 +154,11 @@ class MainActivity : ComponentActivity() {
                 },
                 onAddAlarm = {
                     feedback()
-                    draft = store.newAlarm()
+                    draft = newAlarm()
                 },
                 onAddShiftAlarm = {
                     feedback()
-                    draft = store.newAlarm().copy(
+                    draft = newAlarm().copy(
                         label = "Mi turno",
                         shiftPattern = ShiftPattern.from(LocalDate.now(), 12, 4)
                     )
@@ -170,6 +182,19 @@ class MainActivity : ComponentActivity() {
                     scheduler.cancel(alarm.id)
                     store.delete(alarm.id)
                     alarms = store.getAll()
+                    // Deshacer: vuelve a guardar y programar con el mismo camino que el editor.
+                    scope.launch {
+                        val result = snackbar.showSnackbar(
+                            message = "Alarma «${alarm.label}» eliminada",
+                            actionLabel = "Deshacer",
+                            duration = SnackbarDuration.Short
+                        )
+                        if (result == SnackbarResult.ActionPerformed && store.find(alarm.id) == null) {
+                            store.save(alarm)
+                            scheduleAndReport(alarm)
+                            alarms = store.getAll()
+                        }
+                    }
                 },
                 onHapticsChanged = { enabled ->
                     hapticsEnabled = enabled
@@ -211,18 +236,36 @@ class MainActivity : ComponentActivity() {
                     themeChoice = choice
                     saveThemeChoice(uiPreferences, choice)
                 },
-                sleepPlan = sleepPlan,
-                onSleepPlanChanged = { plan ->
-                    sleepPlan = plan
-                    uiPreferences.edit()
-                        .putInt(PREF_SLEEP_BED, plan.bedMinutes)
-                        .putInt(PREF_SLEEP_WAKE, plan.wakeMinutes)
-                        .apply()
+                sleepSchedule = sleepSchedule,
+                onSleepScheduleChanged = { updated ->
+                    sleepSchedule = updated
+                    saveSleepSchedule(uiPreferences, updated)
+                },
+                notificationPrefs = notificationPrefs,
+                onNotificationPrefsChanged = { updated ->
+                    feedback()
+                    notificationPrefs = updated
+                    saveNotificationPrefs(uiPreferences, updated)
+                    if (
+                        updated.enabled &&
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                        checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+                        PackageManager.PERMISSION_GRANTED
+                    ) {
+                        notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                },
+                canPostNotifications = canPostNotifications,
+                defaultSnoozeMinutes = defaultSnooze,
+                onDefaultSnoozeChanged = { minutes ->
+                    feedback()
+                    defaultSnooze = minutes
+                    saveDefaultSnooze(uiPreferences, minutes)
                 },
                 onCreateWakeAlarm = { hour, minute ->
                     feedback()
                     // Abre el editor existente: es el editor quien guarda y programa la alarma.
-                    draft = store.newAlarm().copy(hour = hour, minute = minute, label = "Despertar")
+                    draft = newAlarm().copy(hour = hour, minute = minute, label = "Despertar")
                 },
                 onRequestAlarmChannel = {
                     runCatching {
@@ -260,8 +303,6 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
-        private const val PREF_SLEEP_BED = "sleep_bed_minutes"
-        private const val PREF_SLEEP_WAKE = "sleep_wake_minutes"
         internal const val EXTRA_DISABLE_LIVE_CLOCK_FOR_TESTS =
             "com.example.despierta.extra.DISABLE_LIVE_CLOCK_FOR_TESTS"
         // Inlined strings keep the guarded settings actions safe on the minSdk 26 code path.
