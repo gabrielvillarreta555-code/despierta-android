@@ -93,6 +93,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -115,6 +116,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -1199,10 +1202,11 @@ internal fun AlarmEditor(
     DisposableEffect(tonePreview) {
         onDispose { tonePreview.stop() }
     }
-    val toneTitle = remember(soundUri) {
-        runCatching {
-            RingtoneManager.getRingtone(context, Uri.parse(soundUri))?.getTitle(context)
-        }.getOrNull() ?: "Tono predeterminado"
+    // El título se resuelve fuera del hilo principal y sin crear un Ringtone: getRingtone()
+    // instancia un MediaPlayer que nunca se liberaba y bloqueaba la apertura del editor.
+    val toneTitle by produceState(initialValue = "Tono predeterminado", soundUri) {
+        value = withContext(Dispatchers.IO) { resolveToneTitle(context, soundUri) }
+            ?: "Tono predeterminado"
     }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         result.data?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)?.let { uri ->
@@ -1581,6 +1585,24 @@ internal fun DespiertaTheme(content: @Composable () -> Unit) {
         content = content
     )
 }
+
+/** Lee el título del tono desde su proveedor de contenido, sin reproducir ni retener audio. */
+private fun resolveToneTitle(context: android.content.Context, soundUri: String): String? = runCatching {
+    var uri = Uri.parse(soundUri.ifBlank { return@runCatching null })
+    if (uri.authority == android.provider.Settings.AUTHORITY) {
+        uri = RingtoneManager.getActualDefaultRingtoneUri(context, RingtoneManager.TYPE_ALARM)
+            ?: return@runCatching null
+    }
+    context.contentResolver.query(
+        uri,
+        arrayOf(android.provider.MediaStore.MediaColumns.TITLE),
+        null,
+        null,
+        null
+    )?.use { cursor ->
+        if (cursor.moveToFirst()) cursor.getString(0)?.takeIf(String::isNotBlank) else null
+    }
+}.getOrNull()
 
 private fun alarmScheduleLabel(alarm: AlarmModel): String {
     val schedule = alarm.shiftPattern?.let { "Turno ${it.workDays}×${it.restDays}" } ?: daysLabel(alarm.days)
