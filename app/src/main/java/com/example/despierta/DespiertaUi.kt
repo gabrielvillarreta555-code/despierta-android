@@ -979,7 +979,7 @@ private fun shiftDetail(day: LocalDate, pattern: ShiftPattern?, alarm: AlarmMode
     if (pattern == null) return "$label · sin turno"
     return when (shiftDayKind(pattern, day)) {
         ShiftDayKind.WORK -> {
-            val time = if (alarm?.enabled == true) "%02d:%02d".format(alarm.hour, alarm.minute) else null
+            val time = if (alarm != null && alarm.enabled) "%02d:%02d".format(alarm.hour, alarm.minute) else null
             if (time != null) "$label · Trabajo · alarma $time" else "$label · Trabajo"
         }
         ShiftDayKind.REST -> "$label · Descanso"

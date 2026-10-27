@@ -232,9 +232,11 @@ internal fun SleepDial(
                 onDragCancel = { handle = null },
                 onDrag = { change, _ ->
                     change.consume()
-                    val current = handle ?: return@detectDragGestures
-                    val geo = dialGeometry(size.width.toFloat(), size.height.toFloat())
-                    latestOnMoved?.invoke(current, pointToMinutes(geo.center, change.position))
+                    val current = handle
+                    if (current != null) {
+                        val geo = dialGeometry(size.width.toFloat(), size.height.toFloat())
+                        latestOnMoved?.invoke(current, pointToMinutes(geo.center, change.position))
+                    }
                 }
             )
         }
