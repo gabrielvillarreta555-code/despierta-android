@@ -143,15 +143,27 @@ class AlarmActivity : ComponentActivity() {
                             maxWidth < 360.dp -> 68.sp
                             else -> 80.sp
                         }
-                        Text(
-                            alarm?.let { "%02d:%02d".format(it.hour, it.minute) } ?: "--:--",
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = timeSize,
-                            lineHeight = timeSize,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            modifier = Modifier.testTag("ringing_time")
-                        )
+                        val ringingParts = alarm?.let { clockParts(it.hour, it.minute) }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                ringingParts?.first ?: "--:--",
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = timeSize,
+                                lineHeight = timeSize,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                modifier = Modifier.testTag("ringing_time")
+                            )
+                            if (ringingParts != null) {
+                                Text(
+                                    ringingParts.second,
+                                    color = palette.accentSoft,
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.testTag("ringing_period")
+                                )
+                            }
+                        }
                     }
                     Text(
                         alarm?.label ?: "Alarma",

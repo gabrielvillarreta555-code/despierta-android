@@ -72,7 +72,7 @@ internal fun SleepScreen(
 ) {
     val palette = LocalDespiertaPalette.current
     val context = LocalContext.current
-    val is24Hour = DateFormat.is24HourFormat(context)
+    val is24Hour = false // Formato de 12 horas en toda la app.
     var target by rememberSaveable { mutableStateOf(SleepTarget.WAKE) }
     val wakeHour = plan.wakeMinutes / 60
     val wakeMinute = plan.wakeMinutes % 60

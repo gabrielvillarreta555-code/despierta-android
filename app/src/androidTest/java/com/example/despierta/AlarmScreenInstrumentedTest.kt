@@ -27,8 +27,8 @@ class AlarmScreenInstrumentedTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val store = AlarmStore(context)
         val alarm = store.newAlarm().copy(
-            hour = 6,
-            minute = 45,
+            hour = 12,
+            minute = 0,
             label = "Contraste verificado",
             snoozeMinutes = 10,
             vibrate = false,
@@ -44,7 +44,8 @@ class AlarmScreenInstrumentedTest {
                 composeRule.waitForIdle()
                 composeRule.onNodeWithTag("ringing_time")
                     .assertIsDisplayed()
-                    .assertTextEquals("06:45")
+                    .assertTextEquals("12:00")
+                composeRule.onNodeWithTag("ringing_period").assertTextEquals("PM")
                 composeRule.onNodeWithTag("ringing_snooze").assertIsDisplayed()
                 composeRule.onNodeWithTag("ringing_stop").assertIsDisplayed()
 

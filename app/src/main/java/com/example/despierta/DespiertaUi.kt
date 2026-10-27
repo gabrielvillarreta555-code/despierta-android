@@ -478,7 +478,7 @@ private fun SleepSummaryCard(
             "Dentro de la referencia de 7 a 9 horas para adultos."
         else -> "Aún tienes tiempo para una rutina tranquila."
     }
-    val is24Hour = DateFormat.is24HourFormat(LocalContext.current)
+    val is24Hour = false // Formato de 12 horas en toda la app.
 
     GlowCard(
         modifier = Modifier.fillMaxWidth().testTag("sleep_duration_card"),
@@ -592,20 +592,28 @@ private fun TimeHero(nowMillis: Long, next: AlarmOccurrence?, animated: Boolean)
                 verticalAlignment = Alignment.Bottom,
                 modifier = Modifier.testTag("live_clock")
             ) {
+                val (clockTime, clockPeriod) = clockParts(now.hour, now.minute)
                 Text(
-                    now.format(DateTimeFormatter.ofPattern("HH:mm")),
+                    clockTime,
                     fontSize = 60.sp,
                     lineHeight = 62.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = (-1).sp,
                     color = palette.textPrimary
                 )
-                Text(
-                    now.format(DateTimeFormatter.ofPattern(":ss")),
-                    fontSize = 20.sp,
-                    color = palette.textSoft,
-                    modifier = Modifier.padding(start = 2.dp, bottom = 10.dp)
-                )
+                Column(Modifier.padding(start = 6.dp, bottom = 10.dp)) {
+                    Text(
+                        clockPeriod,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = palette.accentSoft
+                    )
+                    Text(
+                        now.format(DateTimeFormatter.ofPattern(":ss")),
+                        fontSize = 14.sp,
+                        color = palette.textSoft
+                    )
+                }
             }
             Spacer(Modifier.height(10.dp))
             Row(
@@ -696,13 +704,26 @@ private fun AlarmCard(
     ) {
         Column(Modifier.padding(start = 18.dp, top = 12.dp, end = 10.dp, bottom = 6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "%02d:%02d".format(alarm.hour, alarm.minute),
-                    fontSize = 38.sp,
-                    lineHeight = 40.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (active) palette.textPrimary else palette.textSoft
-                )
+                val (alarmTime, alarmPeriod) = clockParts(alarm.hour, alarm.minute)
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    modifier = Modifier.testTag("alarm_time_${alarm.id}")
+                ) {
+                    Text(
+                        alarmTime,
+                        fontSize = 38.sp,
+                        lineHeight = 40.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (active) palette.textPrimary else palette.textSoft
+                    )
+                    Text(
+                        alarmPeriod,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (active) palette.accentSoft else palette.textSoft,
+                        modifier = Modifier.padding(start = 6.dp, bottom = 6.dp)
+                    )
+                }
                 Spacer(Modifier.weight(1f))
                 Switch(
                     checked = alarm.enabled,
@@ -996,7 +1017,7 @@ private fun shiftDetail(day: LocalDate, pattern: ShiftPattern?, alarm: AlarmMode
     if (pattern == null) return "$label · sin turno"
     return when (shiftDayKind(pattern, day)) {
         ShiftDayKind.WORK -> {
-            val time = if (alarm != null && alarm.enabled) "%02d:%02d".format(alarm.hour, alarm.minute) else null
+            val time = if (alarm != null && alarm.enabled) formatClockTime(alarm.hour, alarm.minute) else null
             if (time != null) "$label · Trabajo · alarma $time" else "$label · Trabajo"
         }
         ShiftDayKind.REST -> "$label · Descanso"
@@ -1028,9 +1049,8 @@ private fun ShiftAlarmCard(
             Column(Modifier.weight(1f)) {
                 Text(alarm.label, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = palette.textPrimary)
                 Text(
-                    "%02d:%02d · %d trabajo / %d descanso".format(
-                        alarm.hour,
-                        alarm.minute,
+                    "%s · %d trabajo / %d descanso".format(
+                        formatClockTime(alarm.hour, alarm.minute),
                         pattern.workDays,
                         pattern.restDays
                     ),
@@ -1346,7 +1366,8 @@ internal fun AlarmEditor(
         mutableLongStateOf(validInitialShift?.startEpochDay ?: LocalDate.now().toEpochDay())
     }
     val context = LocalContext.current
-    val uses24HourClock = DateFormat.is24HourFormat(context)
+    // Toda la app usa formato de 12 horas con AM/PM, sin depender del ajuste del teléfono.
+    val uses24HourClock = false
     var selectedHour by remember(initial.id) { mutableIntStateOf(initial.hour) }
     var selectedMinute by remember(initial.id) { mutableIntStateOf(initial.minute) }
     var manualEntryVisible by remember(initial.id) { mutableStateOf(false) }
@@ -1769,13 +1790,17 @@ private fun formatCivilDate(date: LocalDate): String = date
     .format(DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM", SPANISH))
     .replaceFirstChar { if (it.isLowerCase()) it.titlecase(SPANISH) else it.toString() }
 
-private fun formatOccurrence(millis: Long): String = Instant.ofEpochMilli(millis)
-    .atZone(ZoneId.systemDefault())
-    .format(DateTimeFormatter.ofPattern("EEE d MMM · HH:mm", SPANISH))
+internal fun formatOccurrence(millis: Long, zone: ZoneId = ZoneId.systemDefault()): String {
+    val at = Instant.ofEpochMilli(millis).atZone(zone)
+    return at.format(DateTimeFormatter.ofPattern("EEE d MMM", SPANISH)) +
+        " · " + formatClockTime(at.hour, at.minute)
+}
 
-private fun formatCompactOccurrence(millis: Long): String = Instant.ofEpochMilli(millis)
-    .atZone(ZoneId.systemDefault())
-    .format(DateTimeFormatter.ofPattern("EEE d · HH:mm", SPANISH))
+internal fun formatCompactOccurrence(millis: Long, zone: ZoneId = ZoneId.systemDefault()): String {
+    val at = Instant.ofEpochMilli(millis).atZone(zone)
+    return at.format(DateTimeFormatter.ofPattern("EEE d", SPANISH)) +
+        " · " + formatClockTime(at.hour, at.minute)
+}
 
 internal fun formatCountdown(remainingMillis: Long): String {
     val totalSeconds = (remainingMillis.coerceAtLeast(0L) + 999L) / 1_000L

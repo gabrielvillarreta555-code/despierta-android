@@ -94,13 +94,41 @@ internal fun formatManualTime(hour24: Int, minute: Int, is24Hour: Boolean): Stri
     return if (is24Hour) {
         "%02d:%02d".format(Locale.ROOT, hour24, minute)
     } else {
-        "%02d:%02d %s".format(
-            Locale.ROOT,
-            hour12From24(hour24),
-            minute,
-            if (hour24 >= 12) "PM" else "AM"
-        )
+        formatClockTime(hour24, minute)
     }
+}
+
+/** Formato de 12 horas de toda la app: 13:00 → "1:00 PM", 00:00 → "12:00 AM". */
+internal fun formatClockTime(hour24: Int, minute: Int): String {
+    val (time, period) = clockParts(hour24, minute)
+    return "$time $period"
+}
+
+/** Separa "1:05" y "PM" para mostrar el periodo con otro tamaño. */
+internal fun clockParts(hour24: Int, minute: Int): Pair<String, String> {
+    require(hour24 in 0..23 && minute in 0..59)
+    return "%d:%02d".format(Locale.ROOT, hour12From24(hour24), minute) to periodOf(hour24)
+}
+
+internal fun periodOf(hour24: Int): String = if (hour24 >= 12) "PM" else "AM"
+
+/**
+ * Fila que queda en la franja central de una rueda cuando termina el desplazamiento.
+ *
+ * La primera fila "visible" no siempre es la centrada: si el ajuste final queda unos
+ * píxeles corto (alturas en dp que no son píxeles enteros), la fila anterior sigue asomando
+ * por el relleno superior y es la que informa `firstVisibleItemIndex`. Se redondea a la fila
+ * más cercana, con un criterio fijo para que no alterne entre dos filas.
+ */
+internal fun centeredWheelIndex(
+    firstVisibleIndex: Int,
+    firstVisibleOffsetPx: Int,
+    itemSizePx: Int,
+    itemCount: Int
+): Int {
+    if (itemCount <= 0) return 0
+    val advance = itemSizePx > 0 && firstVisibleOffsetPx * 2 >= itemSizePx
+    return (firstVisibleIndex + if (advance) 1 else 0).coerceIn(0, itemCount - 1)
 }
 
 private data class WheelEntry<T>(val value: T, val text: String, val testKey: String)
@@ -122,7 +150,7 @@ internal fun TimeWheelPicker(
     val hourEntries = if (is24Hour) {
         (0..23).map { WheelEntry(it, "%02d".format(Locale.ROOT, it), it.toString()) }
     } else {
-        (1..12).map { WheelEntry(it, "%02d".format(Locale.ROOT, it), it.toString()) }
+        (1..12).map { WheelEntry(it, it.toString(), it.toString()) }
     }
     val minuteEntries = (0..59).map {
         WheelEntry(it, "%02d".format(Locale.ROOT, it), it.toString())
@@ -182,7 +210,7 @@ internal fun TimeWheelPicker(
             }
         }
         Text(
-            if (is24Hour) "Formato de 24 horas del dispositivo" else "Formato de 12 horas del dispositivo",
+            if (is24Hour) "Formato de 24 horas" else formatClockTime(hour24, minute),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 11.sp,
             modifier = Modifier.padding(top = 6.dp)
@@ -207,7 +235,10 @@ private fun <T> WheelColumn(
     val latestOnSelected = rememberUpdatedState(onSelected)
 
     LaunchedEffect(selectedIndex) {
-        if (!state.isScrollInProgress && state.firstVisibleItemIndex != selectedIndex) {
+        if (
+            !state.isScrollInProgress &&
+            (state.firstVisibleItemIndex != selectedIndex || state.firstVisibleItemScrollOffset != 0)
+        ) {
             state.scrollToItem(selectedIndex)
         }
     }
@@ -216,11 +247,23 @@ private fun <T> WheelColumn(
             .distinctUntilChanged()
             .filter { !it }
             .collect {
-                // With one item of vertical content padding, the first visible item is the
-                // centered selection. Using geometry here can alternate between two equally
-                // close rows and keep Compose permanently busy on slow emulators.
-                entries.getOrNull(state.firstVisibleItemIndex)?.value?.let { value ->
-                    if (value != latestSelected.value) latestOnSelected.value(value)
+                // La fila elegida es la centrada, no la primera que asoma: ver centeredWheelIndex.
+                val first = state.firstVisibleItemIndex
+                val itemSize = state.layoutInfo.visibleItemsInfo
+                    .firstOrNull { it.index == first }
+                    ?.size ?: 0
+                val index = centeredWheelIndex(
+                    firstVisibleIndex = first,
+                    firstVisibleOffsetPx = state.firstVisibleItemScrollOffset,
+                    itemSizePx = itemSize,
+                    itemCount = entries.size
+                )
+                val value = entries[index].value
+                if (value != latestSelected.value) {
+                    latestOnSelected.value(value)
+                } else if (first != index || state.firstVisibleItemScrollOffset != 0) {
+                    // Alinea la rueda con el valor que ya está guardado.
+                    state.scrollToItem(index)
                 }
             }
     }
