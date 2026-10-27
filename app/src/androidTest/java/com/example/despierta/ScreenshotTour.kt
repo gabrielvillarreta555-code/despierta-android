@@ -49,10 +49,15 @@ class ScreenshotTour {
             withApp(ThemeChoice.DEFAULT) {
                 capture("01-alarmas")
                 step("02-alarmas-lista") {
-                    composeRule.onNodeWithTag("alarm_home").performScrollToNode(hasTestTag("alarm_time_$ALARM_WORK"))
+                    // El interruptor es un nodo propio; el texto de la hora se fusiona con la tarjeta.
+                    composeRule.onNodeWithTag("alarm_home").performScrollToNode(hasTestTag("alarm_toggle_$ALARM_WORK"))
                 }
                 step("03-editor-alarma") {
-                    composeRule.onNodeWithTag("alarm_edit_$ALARM_WORK").performScrollTo().performClick()
+                    composeRule.onNodeWithTag("alarm_edit_$ALARM_WORK", useUnmergedTree = true)
+                        .performScrollTo()
+                        .performClick()
+                    // El editor tarda en quedar inactivo en emuladores lentos: una espera extra.
+                    runCatching { composeRule.waitForIdle() }
                 }
                 step("04-editor-opciones") {
                     composeRule.onNodeWithTag("snooze_5").performScrollTo()
