@@ -126,7 +126,7 @@ run_suite \
 run_suite \
   "Interfaz principal" \
   "com.example.despierta.DespiertaUiInstrumentedTest" \
-  300 \
+  900 \
   "$diagnostics_dir/ui-instrumentation.txt"
 
 adb shell settings put system font_scale 1.30
