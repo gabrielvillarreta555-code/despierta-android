@@ -331,10 +331,6 @@ internal fun SleepScreen(
     }
 }
 
-/** Duración en milisegundos de una animación según el ajuste del usuario y de Android. */
-@Composable
-internal fun motion(baseMillis: Int): Int = LocalUiOptions.current.millis(baseMillis)
-
 @Composable
 private fun SleepTimeTile(
     title: String,
@@ -535,33 +531,6 @@ private fun SleepOptionRow(
             modifier = Modifier.weight(1f).padding(start = 12.dp)
         )
         Text(value, color = palette.textSoft, fontSize = 14.sp)
-    }
-}
-
-/** Píldora de selección única (objetivos, anticipación, repetición...). */
-@Composable
-internal fun ChoicePill(
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val palette = LocalDespiertaPalette.current
-    val shape = RoundedCornerShape(12.dp)
-    Box(
-        modifier
-            .clip(shape)
-            .background(if (selected) palette.button else Color.White.copy(alpha = 0.07f))
-            .selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
-            .padding(horizontal = 14.dp, vertical = 9.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text,
-            fontSize = 14.sp,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (selected) palette.onButton else palette.textPrimary
-        )
     }
 }
 
