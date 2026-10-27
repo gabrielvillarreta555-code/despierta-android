@@ -200,7 +200,9 @@ internal fun DespiertaApp(
             containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             snackbarHost = { SnackbarHost(snackbarHostState) },
-            topBar = { BrandBar() },
+            topBar = {
+                BrandBar(onAddAlarm = if (section == AppSection.ALARMS) onAddAlarm else null)
+            },
             bottomBar = {
                 AppNavigation(
                     selected = section,
@@ -263,8 +265,9 @@ internal fun DespiertaApp(
     }
 }
 
+/** Cabecera fija: en Alarmas incluye la acción "Nueva alarma", siempre visible. */
 @Composable
-private fun BrandBar() {
+private fun BrandBar(onAddAlarm: (() -> Unit)? = null) {
     val palette = LocalDespiertaPalette.current
     Row(
         Modifier
@@ -282,7 +285,22 @@ private fun BrandBar() {
             color = palette.textPrimary
         )
         Spacer(Modifier.weight(1f))
-        Text("Tu tiempo, bajo control", color = palette.textSoft, fontSize = 11.sp)
+        if (onAddAlarm != null) {
+            Box(
+                Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(palette.accentBrush)
+                    .clickable(onClick = onAddAlarm)
+                    .semantics { contentDescription = "Nueva alarma" }
+                    .testTag("add_alarm"),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Rounded.Add, contentDescription = null, tint = palette.onAccent)
+            }
+        } else {
+            Text("Tu tiempo, bajo control", color = palette.textSoft, fontSize = 11.sp)
+        }
     }
 }
 
@@ -411,8 +429,6 @@ private fun AlarmHome(
                 detail = "${alarms.count { it.enabled }} activas"
             )
         }
-        // Visible sin desplazar: es la acción principal de la pantalla.
-        item { AddButton(label = "Nueva alarma", tag = "add_alarm", onClick = onAddAlarm) }
         if (alarms.isEmpty()) {
             item { AlarmEmptyState() }
         } else {
