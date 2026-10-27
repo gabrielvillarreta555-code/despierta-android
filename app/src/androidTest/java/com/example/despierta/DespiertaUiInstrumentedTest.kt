@@ -79,7 +79,7 @@ class DespiertaUiInstrumentedTest {
 
     @Test
     fun alarmEditorShowsWheelPickerAndManualEntry() {
-        composeRule.onNodeWithTag("add_alarm").performScrollTo().performClick()
+        composeRule.onNodeWithTag("add_alarm").performClick()
 
         composeRule.onNodeWithTag("time_wheel_hour").assertIsDisplayed()
         composeRule.onNodeWithTag("time_wheel_minute").assertIsDisplayed()
@@ -89,7 +89,7 @@ class DespiertaUiInstrumentedTest {
 
     @Test
     fun alarmEditorAllowsSnoozeAndVibrationConfiguration() {
-        composeRule.onNodeWithTag("add_alarm").performScrollTo().performClick()
+        composeRule.onNodeWithTag("add_alarm").performClick()
         // Separa dos fases para que un fallo indique si Compose seguía ocupado al abrir el
         // editor o después de desplazar su contenido.
         composeRule.onNodeWithTag("time_wheel_hour").assertIsDisplayed()

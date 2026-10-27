@@ -411,6 +411,8 @@ private fun AlarmHome(
                 detail = "${alarms.count { it.enabled }} activas"
             )
         }
+        // Visible sin desplazar: es la acción principal de la pantalla.
+        item { AddButton(label = "Nueva alarma", tag = "add_alarm", onClick = onAddAlarm) }
         if (alarms.isEmpty()) {
             item { AlarmEmptyState() }
         } else {
@@ -423,7 +425,6 @@ private fun AlarmHome(
                 )
             }
         }
-        item { AddButton(label = "Nueva alarma", tag = "add_alarm", onClick = onAddAlarm) }
     }
 }
 
