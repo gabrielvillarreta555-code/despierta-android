@@ -29,3 +29,17 @@ Google Play; ninguna clave se incluye en el repositorio.
 - Barra inferior flotante en forma de píldora; interruptores con pista lavanda.
 - Sin cambios en `AlarmScheduler`, `AlarmReceiver`, `AlarmService`, `AlarmStore`,
   `BootReceiver`, permisos ni manifiesto.
+
+## Segunda iteración de interfaz (apariencia y calendario)
+
+- Fondos prediseñados **Noche**, **Amanecer** y **Bosque**, y cinco colores de acento
+  (Lavanda, Azul, Rosa, Naranja, Menta). Se eligen en Ajustes → Apariencia y se guardan en
+  `despierta_ui` (`theme_preset`, `theme_accent`); toda la interfaz y la pantalla de alarma
+  usan la misma paleta (`DespiertaTheme.kt`).
+- Cabecera sin número de versión ni icono lunar. Resumen de descanso en Alarmas y botón
+  "Nueva alarma" al final de la lista, dentro del contenido.
+- Turnos: calendario mensual con días de trabajo, descanso y excepciones en colores distintos.
+  Al tocar un día se muestra su detalle; "Nuevo turno" abre el editor existente.
+- Ajustes organizados en Apariencia, Alarmas y respuesta, Fiabilidad y Acerca de. Los permisos
+  usan las mismas acciones de siempre.
+- Sin cambios en el motor de alarmas, permisos, persistencia ni lógica de turnos.
