@@ -129,6 +129,12 @@ class ScreenshotTour {
     }
 
     private fun capture(name: String) {
+        // Cierra cualquier diálogo del sistema que haya aparecido encima.
+        runCatching {
+            instrumentation.uiAutomation
+                .executeShellCommand("am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS")
+                .close()
+        }
         composeRule.waitForIdle()
         // Deja que se dibuje el último fotograma antes de capturar.
         Thread.sleep(SETTLE_MILLIS)

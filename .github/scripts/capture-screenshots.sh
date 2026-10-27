@@ -11,9 +11,23 @@ mkdir -p "$output_dir"
 app_package="com.example.despierta"
 runner="com.example.despierta.test/androidx.test.runner.AndroidJUnitRunner"
 
-demo() { adb shell am broadcast -a com.android.systemui.demo -e command "$@" >/dev/null 2>&1 || true; }
+demo() {
+  adb shell am broadcast -a com.android.systemui.demo -e command "$@" >> "$output_dir/demo-mode.txt" 2>&1 || true
+}
+
+# Preparar el emulador: sin diálogos que tapen la app.
+#  - Permiso de notificaciones concedido (si no, la app muestra el diálogo al abrirse).
+#  - Diálogos de error del sistema ocultos ("Pixel Launcher no responde" en emuladores lentos).
+adb shell pm grant "$app_package" android.permission.POST_NOTIFICATIONS >/dev/null 2>&1 || true
+adb shell settings put global hide_error_dialogs 1 >/dev/null 2>&1 || true
+adb shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
+adb shell wm dismiss-keyguard >/dev/null 2>&1 || true
+# Deja que el lanzador termine de arrancar antes de empezar.
+sleep 25
+adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1 || true
 
 adb shell settings put global sysui_demo_allowed 1 >/dev/null 2>&1 || true
+sleep 2
 demo enter
 demo clock -e hhmm 2142
 demo battery -e level 82 -e plugged false
@@ -41,7 +55,11 @@ for name in $(adb shell run-as "$app_package" ls files/screenshots 2>/dev/null |
     rm -f "$output_dir/$name"
   fi
 done
-adb logcat -d -s DespiertaCapturas:V > "$output_dir/tour-log.txt" 2>&1 || true
+adb logcat -d -v brief -s DespiertaCapturas:V > "$output_dir/tour-log.txt" 2>&1 || true
+# Publica como anotación qué pantallas fallaron y por qué (primera línea de cada error).
+grep -A1 "captura_fallida" "$output_dir/tour-log.txt" | grep -v "^--" | head -n 24 \
+  | sed 's/^/::warning title=Captura fallida::/' || true
+grep "capturadas=" "$output_dir/tour-log.txt" | sed 's/^/::notice title=Recorrido::/' || true
 
 echo "Capturas copiadas: $count"
 if [[ $count -eq 0 ]]; then
