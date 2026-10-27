@@ -162,3 +162,71 @@ jobs:
             app/build/outputs/androidTest-results/diagnostics/Despierta-2.5-Inicio.png
           if-no-files-found: warn
           retention-days: 14
+
+  # Capturas de diseño: recorren las pantallas en un emulador y se publican en la rama
+  # `screenshots` (legible con git) solo cuando cambian. No bloquean el resto del CI.
+  screenshots:
+    name: screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: write
+    steps:
+      - name: Descargar proyecto
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Comprobar si hay cambios visuales posibles
+        id: gate
+        shell: bash
+        run: |
+          render=true
+          if git fetch -q origin screenshots 2>/dev/null; then
+            published="$(git show FETCH_HEAD:SOURCE_COMMIT 2>/dev/null | tr -d '[:space:]' || true)"
+            if [[ -n "$published" ]] && git cat-file -e "${published}^{commit}" 2>/dev/null \
+              && git diff --quiet "$published" HEAD -- app/src/main app/src/androidTest app/build.gradle.kts \
+                .github/scripts/capture-screenshots.sh .github/scripts/publish-screenshots.sh; then
+              render=false
+              echo "Sin cambios en la interfaz desde $published: no se regeneran capturas."
+            fi
+          fi
+          echo "render=$render" >> "$GITHUB_OUTPUT"
+
+      - name: Instalar Java 17
+        if: steps.gate.outputs.render == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Preparar Gradle
+        if: steps.gate.outputs.render == 'true'
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Compilar APK y recorrido de capturas
+        if: steps.gate.outputs.render == 'true'
+        run: ./gradlew assembleDebug assembleDebugAndroidTest --stacktrace
+
+      - name: Generar capturas (Android 14, Pixel 6)
+        if: steps.gate.outputs.render == 'true'
+        uses: ReactiveCircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-boot-timeout: 900
+          script: |
+            mkdir -p app/build/outputs/screenshots
+            bash .github/scripts/wait-for-android.sh app/build/outputs/screenshots/emulator-readiness.txt
+            bash .github/scripts/install-apk-with-retry.sh app/build/outputs/apk/debug/app-debug.apk app/build/outputs/screenshots/app-install.txt
+            bash .github/scripts/install-apk-with-retry.sh app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk app/build/outputs/screenshots/test-install.txt
+            bash .github/scripts/capture-screenshots.sh app/build/outputs/screenshots
+
+      - name: Publicar capturas en la rama screenshots
+        if: steps.gate.outputs.render == 'true'
+        shell: bash
+        run: bash .github/scripts/publish-screenshots.sh app/build/outputs/screenshots "${{ github.event.pull_request.head.sha || github.sha }}"

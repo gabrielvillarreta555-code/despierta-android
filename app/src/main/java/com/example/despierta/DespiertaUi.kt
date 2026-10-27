@@ -167,6 +167,8 @@ internal fun DespiertaApp(
     permissionState: PermissionUiState,
     hapticsEnabled: Boolean,
     liveClockUpdates: Boolean = true,
+    /** Hora fija (solo pruebas y capturas); se usa cuando el reloj vivo está desactivado. */
+    fixedNowMillis: Long? = null,
     snackbarHostState: SnackbarHostState,
     onSectionSelected: (AppSection) -> Unit,
     onAddAlarm: () -> Unit,
@@ -191,10 +193,10 @@ internal fun DespiertaApp(
     onThemeChanged: (ThemeChoice) -> Unit = {}
 ) {
     val palette = LocalDespiertaPalette.current
-    var nowMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var nowMillis by remember { mutableLongStateOf(fixedNowMillis ?: System.currentTimeMillis()) }
     DisposableEffect(liveClockUpdates) {
         if (!liveClockUpdates) {
-            nowMillis = System.currentTimeMillis()
+            nowMillis = fixedNowMillis ?: System.currentTimeMillis()
             return@DisposableEffect onDispose { }
         }
         val handler = Handler(Looper.getMainLooper())

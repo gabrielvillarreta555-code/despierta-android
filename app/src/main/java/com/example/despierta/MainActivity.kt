@@ -147,6 +147,12 @@ class MainActivity : ComponentActivity() {
                     BuildConfig.DEBUG &&
                         intent.getBooleanExtra(EXTRA_DISABLE_LIVE_CLOCK_FOR_TESTS, false)
                     ),
+                // Solo en compilaciones de depuración: hora fija para capturas reproducibles.
+                fixedNowMillis = if (BuildConfig.DEBUG) {
+                    intent.getLongExtra(EXTRA_FIXED_NOW_MILLIS_FOR_TESTS, -1L).takeIf { it > 0L }
+                } else {
+                    null
+                },
                 snackbarHostState = snackbar,
                 onSectionSelected = {
                     feedback()
@@ -305,6 +311,8 @@ class MainActivity : ComponentActivity() {
     companion object {
         internal const val EXTRA_DISABLE_LIVE_CLOCK_FOR_TESTS =
             "com.example.despierta.extra.DISABLE_LIVE_CLOCK_FOR_TESTS"
+        internal const val EXTRA_FIXED_NOW_MILLIS_FOR_TESTS =
+            "com.example.despierta.extra.FIXED_NOW_MILLIS_FOR_TESTS"
         // Inlined strings keep the guarded settings actions safe on the minSdk 26 code path.
         private const val ACTION_REQUEST_EXACT_ALARM =
             "android.settings.REQUEST_SCHEDULE_EXACT_ALARM"
