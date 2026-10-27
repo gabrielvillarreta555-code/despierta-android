@@ -61,9 +61,22 @@ grep -A1 "captura_fallida" "$output_dir/tour-log.txt" | grep -v "^--" | head -n 
   | sed 's/^/::warning title=Captura fallida::/' || true
 grep "capturadas=" "$output_dir/tour-log.txt" | sed 's/^/::notice title=Recorrido::/' || true
 
+annotate() {
+  # Una sola anotación de varias líneas, legible desde la API de GitHub.
+  local level="$1" title="$2" file="$3" lines="$4"
+  [[ -s "$file" ]] || return 0
+  local body
+  body="$(tail -n "$lines" "$file" | sed 's/%/%25/g; s/\r//g' | awk 'BEGIN { ORS = "%0A" } { print }')"
+  echo "::$level title=$title::$body"
+}
+
 echo "Capturas copiadas: $count"
+if [[ $count -eq 0 ]] || [[ $status -ne 0 ]]; then
+  annotate warning "Instrumentación de capturas" "$output_dir/instrumentation.txt" 45
+  adb logcat -d -v brief AndroidRuntime:E TestRunner:V DespiertaCapturas:V '*:S' > "$output_dir/runner-log.txt" 2>&1 || true
+  annotate warning "Registro del recorrido" "$output_dir/runner-log.txt" 45
+fi
 if [[ $count -eq 0 ]]; then
   echo "::error title=Capturas::No se generó ninguna captura."
-  tail -n 40 "$output_dir/instrumentation.txt" || true
   exit 1
 fi
