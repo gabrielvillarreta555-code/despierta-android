@@ -30,7 +30,23 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Pruebas unitarias y análisis
-        run: ./gradlew testDebugUnitTest lintDebug --stacktrace
+        shell: bash
+        run: |
+          # Diagnóstico: los errores de compilación, lint y tests se publican como anotaciones
+          # para poder leerlos sin descargar el registro completo.
+          log="$RUNNER_TEMP/unit-lint.log"
+          set +e
+          ./gradlew testDebugUnitTest lintDebug --stacktrace > "$log" 2>&1
+          status=$?
+          set -e
+          grep -E '^e: ' "$log" | head -40 | sed 's/^/::error::/' || true
+          grep -E 'What went wrong' -A3 "$log" | head -30 | sed 's/^/::error::/' || true
+          for report in app/build/reports/lint-results-debug.xml; do
+            [ -f "$report" ] && grep -E 'severity="Error"' -A1 "$report" | head -30 | sed 's/^/::error::LINT /' || true
+          done
+          grep -l '<failure' app/build/test-results/testDebugUnitTest/*.xml 2>/dev/null | head -20 | sed 's/^/::error::TEST FALLO /' || true
+          tail -n 120 "$log"
+          exit $status
 
       - name: Compilar APK y AAB
         run: ./gradlew assembleDebug bundleRelease --stacktrace
