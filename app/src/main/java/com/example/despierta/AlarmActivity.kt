@@ -36,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -97,11 +98,15 @@ class AlarmActivity : ComponentActivity() {
             }
         }
 
-        DespiertaTheme {
+        // Misma paleta que la app principal; solo afecta a colores.
+        val palette = remember {
+            loadThemeChoice(getSharedPreferences(DESPIERTA_UI_PREFS, MODE_PRIVATE)).toPalette()
+        }
+        DespiertaTheme(palette = palette) {
             Box(
                 Modifier
                     .fillMaxSize()
-                    .background(NightBackgroundBrush)
+                    .background(palette.skyBrush)
             ) {
                 Column(
                     Modifier
@@ -198,7 +203,7 @@ class AlarmActivity : ComponentActivity() {
                                     "No se pudo posponer. La alarma seguirá activa para que puedas intentarlo de nuevo."
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Lavender, contentColor = OnLavender),
+                        colors = ButtonDefaults.buttonColors(containerColor = palette.accent, contentColor = palette.onAccent),
                         shape = RoundedCornerShape(22.dp),
                         modifier = Modifier.fillMaxWidth().height(60.dp).testTag("ringing_snooze")
                     ) {
@@ -216,7 +221,7 @@ class AlarmActivity : ComponentActivity() {
                     OutlinedButton(
                         onClick = { stopIfAllowed() },
                         shape = RoundedCornerShape(22.dp),
-                        border = BorderStroke(1.5.dp, Lavender.copy(alpha = 0.7f)),
+                        border = BorderStroke(1.5.dp, palette.accent.copy(alpha = 0.7f)),
                         modifier = Modifier.fillMaxWidth().height(60.dp).testTag("ringing_stop")
                     ) {
                         Text(if (alarm?.mathChallengeEnabled == true) "Comprobar y detener" else "Detener")

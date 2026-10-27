@@ -5,19 +5,12 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.SwitchColors
-import androidx.compose.material3.SwitchDefaults
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -28,95 +21,21 @@ import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.input.pointer.pointerInput
 import kotlin.math.PI
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
 
-// ---------- Paleta nocturna ----------
-
-internal val NightDeep = Color(0xFF0D0A1C)
-internal val NightBase = Color(0xFF15102B)
-internal val NightRaised = Color(0xFF221A40)
-internal val NightCard = Color(0xFF1D1736)
-internal val NightCardHigh = Color(0xFF2A2150)
-internal val NightOutline = Color(0xFF4B3F78)
-internal val Lavender = Color(0xFFC9A7FF)
-internal val LavenderSoft = Color(0xFFE4D4FF)
-internal val LavenderDeep = Color(0xFF8A63E8)
-internal val OnLavender = Color(0xFF221545)
+// Colores de luna y sol: no dependen del fondo elegido.
 internal val MoonLight = Color(0xFFFFE6D2)
 internal val MoonWarm = Color(0xFFFFB86B)
 internal val StarGold = Color(0xFFFFD45C)
 internal val DawnOrange = Color(0xFFFFA24C)
 internal val DuskBlue = Color(0xFFCFE3FF)
-internal val TextSoft = Color(0xFFC3BBDD)
 
-/** Fondo general: luz violeta difusa arriba que se pierde en la noche. */
-internal val NightBackgroundBrush: Brush = Brush.verticalGradient(
-    0f to Color(0xFF3B2B66),
-    0.28f to Color(0xFF1E1640),
-    0.62f to NightBase,
-    1f to NightDeep
-)
-
-/** Degradado de la tarjeta principal, como la primera pantalla de referencia. */
-internal val HeroBrush: Brush = Brush.verticalGradient(
-    listOf(Color(0xFF6B4E9E), Color(0xFF3A2A62), Color(0xFF1C1535))
-)
-
-internal val CardBrush: Brush = Brush.verticalGradient(
-    listOf(Color(0xFF2A2150), Color(0xFF1C1634))
-)
-
-internal val ActiveCardBrush: Brush = Brush.linearGradient(
-    listOf(Color(0xFF3A2C6E), Color(0xFF231B44))
-)
-
-internal val LavenderBrush: Brush = Brush.linearGradient(
-    listOf(Color(0xFFDCC4FF), Color(0xFFB08CFF))
-)
-
-@Composable
-internal fun despiertaSwitchColors(): SwitchColors = SwitchDefaults.colors(
-    checkedThumbColor = Color.White,
-    checkedTrackColor = Lavender,
-    checkedBorderColor = Lavender,
-    uncheckedThumbColor = Color(0xFFE9E3FF),
-    uncheckedTrackColor = Color(0xFF3A3160),
-    uncheckedBorderColor = Color(0xFF3A3160)
-)
-
-/** Tarjeta redondeada con degradado y un borde de luz muy fino. */
-@Composable
-internal fun GlowCard(
-    modifier: Modifier = Modifier,
-    brush: Brush = CardBrush,
-    corner: Dp = 24.dp,
-    borderColor: Color = Color.White.copy(alpha = 0.07f),
-    contentPadding: Dp = 0.dp,
-    content: @Composable () -> Unit
-) {
-    val shape = RoundedCornerShape(corner)
-    Box(
-        modifier
-            .clip(shape)
-            .background(brush)
-            .border(BorderStroke(1.dp, borderColor), shape)
-            .padding(contentPadding)
-    ) {
-        Column { content() }
-    }
-}
-
-// ---------- Luna con estrellas ----------
-
-/**
- * Luna creciente con estrellas dibujada con Canvas; no requiere recursos gráficos.
- * Cuando [animated] es falso (pruebas instrumentadas) se dibuja estática.
- */
+/** Luna creciente con estrellas dibujada con Canvas; no usa imágenes. */
 @Composable
 internal fun MoonWithStars(modifier: Modifier = Modifier, animated: Boolean = true) {
     val glow: Float
@@ -145,7 +64,6 @@ internal fun MoonWithStars(modifier: Modifier = Modifier, animated: Boolean = tr
         val origin = Offset((size.width - s) / 2f, (size.height - s) / 2f)
         fun p(x: Float, y: Float) = Offset(origin.x + x * s, origin.y + y * s)
 
-        // Halo cálido detrás de la luna.
         drawCircle(
             brush = Brush.radialGradient(
                 listOf(MoonWarm.copy(alpha = 0.42f * glow), Color.Transparent),
@@ -156,13 +74,8 @@ internal fun MoonWithStars(modifier: Modifier = Modifier, animated: Boolean = tr
             center = p(0.42f, 0.55f)
         )
 
-        // Creciente: círculo exterior menos un círculo desplazado.
-        val outer = Path().apply {
-            addOval(Rect(center = p(0.42f, 0.55f), radius = s * 0.34f))
-        }
-        val inner = Path().apply {
-            addOval(Rect(center = p(0.58f, 0.43f), radius = s * 0.29f))
-        }
+        val outer = Path().apply { addOval(Rect(center = p(0.42f, 0.55f), radius = s * 0.34f)) }
+        val inner = Path().apply { addOval(Rect(center = p(0.58f, 0.43f), radius = s * 0.29f)) }
         val crescent = Path().apply { op(outer, inner, PathOperation.Difference) }
         drawPath(
             path = crescent,
@@ -185,11 +98,9 @@ private fun DrawScope.drawStar(center: Offset, radius: Float) {
     for (i in 0 until 10) {
         val r = if (i % 2 == 0) radius else innerRadius
         val angle = -PI / 2 + i * PI / 5
-        val point = Offset(
-            center.x + (r * cos(angle)).toFloat(),
-            center.y + (r * sin(angle)).toFloat()
-        )
-        if (i == 0) path.moveTo(point.x, point.y) else path.lineTo(point.x, point.y)
+        val x = center.x + (r * cos(angle)).toFloat()
+        val y = center.y + (r * sin(angle)).toFloat()
+        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
     }
     path.close()
     drawCircle(
@@ -211,9 +122,43 @@ private fun DrawScope.drawStar(center: Offset, radius: Float) {
     )
 }
 
-// ---------- Dial de sueño ----------
+/** Siluetas de montañas: el paisaje nocturno de la cabecera. */
+@Composable
+internal fun NightLandscape(hill: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val w = size.width
+        val h = size.height
+        val back = Path().apply {
+            moveTo(0f, h * 0.62f)
+            lineTo(w * 0.18f, h * 0.38f)
+            lineTo(w * 0.32f, h * 0.55f)
+            lineTo(w * 0.52f, h * 0.30f)
+            lineTo(w * 0.72f, h * 0.52f)
+            lineTo(w * 0.86f, h * 0.40f)
+            lineTo(w, h * 0.58f)
+            lineTo(w, h)
+            lineTo(0f, h)
+            close()
+        }
+        drawPath(back, color = hill.copy(alpha = 0.55f))
+        val front = Path().apply {
+            moveTo(0f, h * 0.78f)
+            lineTo(w * 0.22f, h * 0.60f)
+            lineTo(w * 0.40f, h * 0.74f)
+            lineTo(w * 0.64f, h * 0.58f)
+            lineTo(w * 0.84f, h * 0.72f)
+            lineTo(w, h * 0.64f)
+            lineTo(w, h)
+            lineTo(0f, h)
+            close()
+        }
+        drawPath(front, color = hill)
+    }
+}
 
-/** Plan de sueño elegido por el usuario. Solo es una preferencia visual; no programa alarmas. */
+// ---------- Plan de sueño (solo preferencia visual) ----------
+
+/** Plan de sueño elegido por el usuario. No programa alarmas por sí mismo. */
 internal data class SleepPlan(val bedMinutes: Int, val wakeMinutes: Int) {
     val durationMinutes: Int get() = sleepPlanDuration(bedMinutes, wakeMinutes)
 
@@ -222,41 +167,91 @@ internal data class SleepPlan(val bedMinutes: Int, val wakeMinutes: Int) {
     }
 }
 
+internal const val MINUTES_PER_DAY = 24 * 60
+
 internal fun sleepPlanDuration(bedMinutes: Int, wakeMinutes: Int): Int =
     Math.floorMod(wakeMinutes - bedMinutes, MINUTES_PER_DAY)
 
 internal fun normalizeMinuteOfDay(value: Int): Int = Math.floorMod(value, MINUTES_PER_DAY)
 
-internal const val MINUTES_PER_DAY = 24 * 60
+/** Qué extremo del anillo se está moviendo. */
+internal enum class DialHandle { BED, WAKE }
+
+private class DialGeometry(val center: Offset, val radius: Float, val ringWidth: Float)
+
+private fun dialGeometry(width: Float, height: Float): DialGeometry {
+    val s = min(width, height)
+    val ringWidth = s * 0.13f
+    val radius = s / 2f - ringWidth / 2f - s * 0.02f
+    return DialGeometry(Offset(width / 2f, height / 2f), radius, ringWidth)
+}
+
+private fun minutesToAngle(minutes: Int): Float = minutes / MINUTES_PER_DAY.toFloat() * 360f - 90f
+
+private fun ringPoint(center: Offset, radius: Float, angleDeg: Float): Offset {
+    val rad = Math.toRadians(angleDeg.toDouble())
+    return Offset(center.x + (radius * cos(rad)).toFloat(), center.y + (radius * sin(rad)).toFloat())
+}
+
+/** Convierte un punto del anillo en minutos del día, redondeados a 5 minutos. */
+private fun pointToMinutes(center: Offset, point: Offset): Int {
+    val deg = Math.toDegrees(atan2((point.y - center.y).toDouble(), (point.x - center.x).toDouble())).toFloat()
+    val fromTop = ((deg + 90f) % 360f + 360f) % 360f
+    val minutes = fromTop / 360f * MINUTES_PER_DAY
+    return (Math.round(minutes / 5f) * 5) % MINUTES_PER_DAY
+}
 
 /**
- * Anillo de 24 horas: el arco morado va de la hora de dormir a la de despertar.
- * La medianoche queda arriba.
+ * Anillo de 24 horas: el arco va de la hora de dormir a la de despertar.
+ * Si [onHandleMoved] no es nulo, cada extremo se puede arrastrar alrededor del anillo.
  */
 @Composable
-internal fun SleepDial(plan: SleepPlan, modifier: Modifier = Modifier) {
-    Canvas(modifier) {
+internal fun SleepDial(
+    plan: SleepPlan,
+    accent: Color,
+    accentSoft: Color,
+    modifier: Modifier = Modifier,
+    onHandleMoved: ((DialHandle, Int) -> Unit)? = null
+) {
+    val latestPlan by rememberUpdatedState(plan)
+    val latestOnMoved by rememberUpdatedState(onHandleMoved)
+    val dragModifier = if (onHandleMoved != null) {
+        Modifier.pointerInput(Unit) {
+            var handle: DialHandle? = null
+            detectDragGestures(
+                onDragStart = { offset ->
+                    val geo = dialGeometry(size.width.toFloat(), size.height.toFloat())
+                    val bed = ringPoint(geo.center, geo.radius, minutesToAngle(latestPlan.bedMinutes))
+                    val wakeAngle = minutesToAngle(latestPlan.bedMinutes + latestPlan.durationMinutes)
+                    val wake = ringPoint(geo.center, geo.radius, wakeAngle)
+                    val toBed = (offset - bed).getDistance()
+                    val toWake = (offset - wake).getDistance()
+                    handle = if (toBed <= toWake) DialHandle.BED else DialHandle.WAKE
+                },
+                onDragEnd = { handle = null },
+                onDragCancel = { handle = null },
+                onDrag = { change, _ ->
+                    change.consume()
+                    val current = handle ?: return@detectDragGestures
+                    val geo = dialGeometry(size.width.toFloat(), size.height.toFloat())
+                    latestOnMoved?.invoke(current, pointToMinutes(geo.center, change.position))
+                }
+            )
+        }
+    } else {
+        Modifier
+    }
+
+    Canvas(modifier.then(dragModifier)) {
+        val geo = dialGeometry(size.width, size.height)
+        val center = geo.center
+        val radius = geo.radius
+        val ringWidth = geo.ringWidth
         val s = min(size.width, size.height)
-        val ringWidth = s * 0.13f
-        val radius = s / 2f - ringWidth / 2f - s * 0.02f
-        val center = Offset(size.width / 2f, size.height / 2f)
         val arcTopLeft = Offset(center.x - radius, center.y - radius)
         val arcSize = Size(radius * 2f, radius * 2f)
 
-        fun angleOf(minutes: Int) = minutes / MINUTES_PER_DAY.toFloat() * 360f - 90f
-        fun pointAt(angleDeg: Float, r: Float): Offset {
-            val rad = Math.toRadians(angleDeg.toDouble())
-            return Offset(center.x + (r * cos(rad)).toFloat(), center.y + (r * sin(rad)).toFloat())
-        }
-
-        // Pista del anillo.
-        drawCircle(
-            color = Color(0xFF2B2252),
-            radius = radius,
-            center = center,
-            style = Stroke(width = ringWidth)
-        )
-        // Interior oscuro.
+        drawCircle(color = Color(0xFF2B2252), radius = radius, center = center, style = Stroke(width = ringWidth))
         drawCircle(
             brush = Brush.radialGradient(
                 listOf(Color(0xFF2A2056), Color(0xFF130E28)),
@@ -267,7 +262,6 @@ internal fun SleepDial(plan: SleepPlan, modifier: Modifier = Modifier) {
             center = center
         )
 
-        // Marcas de reloj: 96 cuartos de hora, más largas cada 3 horas.
         val tickOuter = radius - ringWidth / 2f - s * 0.035f
         for (i in 0 until 96) {
             val angle = i * 3.75f - 90f
@@ -279,21 +273,20 @@ internal fun SleepDial(plan: SleepPlan, modifier: Modifier = Modifier) {
                 else -> s * 0.022f
             }
             drawLine(
-                color = if (major) LavenderSoft else Color.White.copy(alpha = if (hourMark) 0.55f else 0.25f),
-                start = pointAt(angle, tickOuter),
-                end = pointAt(angle, tickOuter - length),
+                color = if (major) accentSoft else Color.White.copy(alpha = if (hourMark) 0.55f else 0.25f),
+                start = ringPoint(center, tickOuter, angle),
+                end = ringPoint(center, tickOuter - length, angle),
                 strokeWidth = if (major) s * 0.012f else s * 0.006f,
                 cap = StrokeCap.Round
             )
         }
 
-        // Arco de sueño.
-        val start = angleOf(plan.bedMinutes)
+        val startAngle = minutesToAngle(plan.bedMinutes)
         val sweep = plan.durationMinutes / MINUTES_PER_DAY.toFloat() * 360f
         if (sweep > 0f) {
             drawArc(
-                brush = Brush.sweepGradient(listOf(LavenderDeep, Lavender, LavenderSoft, LavenderDeep), center),
-                startAngle = start,
+                brush = Brush.sweepGradient(listOf(accent.copy(alpha = 0.7f), accent, accentSoft, accent.copy(alpha = 0.7f)), center),
+                startAngle = startAngle,
                 sweepAngle = sweep,
                 useCenter = false,
                 topLeft = arcTopLeft,
@@ -302,10 +295,9 @@ internal fun SleepDial(plan: SleepPlan, modifier: Modifier = Modifier) {
             )
         }
 
-        // Extremos: luna (dormir) y sol (despertar).
         val knob = ringWidth * 0.42f
-        val bedPoint = pointAt(start, radius)
-        val wakePoint = pointAt(start + sweep, radius)
+        val bedPoint = ringPoint(center, radius, startAngle)
+        val wakePoint = ringPoint(center, radius, startAngle + sweep)
         drawCircle(Color(0xFF1B1538), knob * 1.25f, bedPoint)
         drawCircle(DuskBlue, knob, bedPoint)
         drawCircle(Color(0xFF1B1538), knob * 1.25f, wakePoint)

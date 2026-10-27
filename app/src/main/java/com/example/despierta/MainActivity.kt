@@ -66,6 +66,11 @@ class MainActivity : ComponentActivity() {
             )
         }
 
+        // Apariencia: fondo y acento. Solo cambia colores, nunca la programación de alarmas.
+        var themeChoice by remember {
+            mutableStateOf(loadThemeChoice(uiPreferences))
+        }
+
         val notificationPermission = rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) {
@@ -120,7 +125,7 @@ class MainActivity : ComponentActivity() {
             needsAlarmChannel = AlarmService.isNotificationChannelDegraded(this)
         )
 
-        DespiertaTheme {
+        DespiertaTheme(palette = themeChoice.toPalette()) {
             DespiertaApp(
                 alarms = alarms,
                 section = section,
@@ -200,6 +205,11 @@ class MainActivity : ComponentActivity() {
                         ACTION_MANAGE_FULL_SCREEN_INTENT,
                         Uri.parse("package:$packageName")
                     )
+                },
+                themeChoice = themeChoice,
+                onThemeChanged = { choice ->
+                    themeChoice = choice
+                    saveThemeChoice(uiPreferences, choice)
                 },
                 sleepPlan = sleepPlan,
                 onSleepPlanChanged = { plan ->
