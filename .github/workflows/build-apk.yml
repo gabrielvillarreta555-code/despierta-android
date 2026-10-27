@@ -49,7 +49,7 @@ jobs:
           exit $status
 
       - name: Compilar APK y AAB
-        run: ./gradlew assembleDebug bundleRelease --stacktrace
+        run: ./gradlew assembleDebug assembleFluida bundleRelease --stacktrace
 
       - name: Preparar y verificar Despierta 2.5
         shell: bash
@@ -58,6 +58,7 @@ jobs:
           release_dir="app/build/outputs/despierta-2.5"
           mkdir -p "$release_dir"
           cp app/build/outputs/apk/debug/app-debug.apk "$release_dir/Despierta-2.5.apk"
+          cp app/build/outputs/apk/fluida/app-fluida.apk "$release_dir/Despierta-2.5-fluida.apk"
           cp app/build/outputs/bundle/release/app-release.aab "$release_dir/Despierta-2.5-unsigned.aab"
           commit_sha="$(git rev-parse HEAD)"
           aapt_path="$ANDROID_HOME/build-tools/36.0.0/aapt"

@@ -26,6 +26,19 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GIT_COMMIT", "\"${buildCommit.take(12)}\"")
     }
+    buildTypes {
+        // Versión optimizada para instalar y probar: R8 activado, sin depuración y firmada con la
+        // clave de depuración, así se instala encima del APK de depuración conservando los datos.
+        // No es la versión de Google Play (esa se firma con la clave de carga).
+        create("fluida") {
+            initWith(getByName("release"))
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+        }
+    }
     buildFeatures {
         compose = true
         buildConfig = true

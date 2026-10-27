@@ -8,7 +8,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -38,28 +41,32 @@ internal val DuskBlue = Color(0xFFCFE3FF)
 /** Luna creciente con estrellas dibujada con Canvas; no usa imágenes. */
 @Composable
 internal fun MoonWithStars(modifier: Modifier = Modifier, animated: Boolean = true) {
-    val glow: Float
-    val twinkle: Float
+    // Los valores animados se leen dentro del dibujo: la luna se redibuja sin recomponer
+    // la pantalla en cada fotograma.
+    val glowState: State<Float>
+    val twinkleState: State<Float>
     if (animated) {
         val transition = rememberInfiniteTransition(label = "moon")
-        glow = transition.animateFloat(
+        glowState = transition.animateFloat(
             initialValue = 0.75f,
             targetValue = 1f,
             animationSpec = infiniteRepeatable(tween(2600), RepeatMode.Reverse),
             label = "moon_glow"
-        ).value
-        twinkle = transition.animateFloat(
+        )
+        twinkleState = transition.animateFloat(
             initialValue = 0.82f,
             targetValue = 1.08f,
             animationSpec = infiniteRepeatable(tween(1700), RepeatMode.Reverse),
             label = "moon_twinkle"
-        ).value
+        )
     } else {
-        glow = 0.9f
-        twinkle = 1f
+        glowState = remember { mutableFloatStateOf(0.9f) }
+        twinkleState = remember { mutableFloatStateOf(1f) }
     }
 
     Canvas(modifier) {
+        val glow = glowState.value
+        val twinkle = twinkleState.value
         val s = min(size.width, size.height)
         val origin = Offset((size.width - s) / 2f, (size.height - s) / 2f)
         fun p(x: Float, y: Float) = Offset(origin.x + x * s, origin.y + y * s)

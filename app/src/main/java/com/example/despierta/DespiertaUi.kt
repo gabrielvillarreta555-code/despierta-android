@@ -202,8 +202,10 @@ internal fun DespiertaApp(
         val handler = Handler(Looper.getMainLooper())
         val ticker = object : Runnable {
             override fun run() {
+                // Las pantallas solo necesitan la hora al minuto: así no se recalcula todo cada
+                // segundo. La tarjeta del reloj lleva su propio segundero (TimeHero).
                 nowMillis = System.currentTimeMillis()
-                val nextTick = (1_000L - nowMillis % 1_000L).coerceAtLeast(100L)
+                val nextTick = (60_000L - nowMillis % 60_000L).coerceAtLeast(250L)
                 handler.postDelayed(this, nextTick)
             }
         }
@@ -608,7 +610,22 @@ private fun SleepSummaryCard(
 @Composable
 private fun TimeHero(nowMillis: Long, next: AlarmOccurrence?, animated: Boolean) {
     val palette = LocalDespiertaPalette.current
-    val now = Instant.ofEpochMilli(nowMillis).atZone(ZoneId.systemDefault())
+    // Segundero local: solo esta tarjeta se vuelve a dibujar cada segundo.
+    var secondMillis by remember { mutableLongStateOf(nowMillis) }
+    DisposableEffect(animated) {
+        if (!animated) return@DisposableEffect onDispose { }
+        val handler = Handler(Looper.getMainLooper())
+        val ticker = object : Runnable {
+            override fun run() {
+                secondMillis = System.currentTimeMillis()
+                handler.postDelayed(this, (1_000L - secondMillis % 1_000L).coerceAtLeast(50L))
+            }
+        }
+        handler.post(ticker)
+        onDispose { handler.removeCallbacks(ticker) }
+    }
+    val shownMillis = if (animated) secondMillis else nowMillis
+    val now = Instant.ofEpochMilli(shownMillis).atZone(ZoneId.systemDefault())
     GlowCard(
         modifier = Modifier.fillMaxWidth(),
         brush = palette.heroBrush,
@@ -708,7 +725,7 @@ private fun TimeHero(nowMillis: Long, next: AlarmOccurrence?, animated: Boolean)
                             letterSpacing = 0.8.sp
                         )
                         Text(
-                            formatCountdown(next.triggerAtMillis - nowMillis),
+                            formatCountdown(next.triggerAtMillis - shownMillis),
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
                             color = palette.textPrimary,

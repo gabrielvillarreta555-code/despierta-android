@@ -36,7 +36,34 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AlarmService.ensureNotificationChannel(this)
+        requestHighestRefreshRate()
         setContent { AlarmApp(resumeGeneration) }
+    }
+
+    /**
+     * Pide a Android la frecuencia de refresco más alta de la pantalla (90 o 120 Hz si existe)
+     * a la resolución actual. Android la baja por su cuenta cuando no hay movimiento.
+     */
+    private fun requestHighestRefreshRate() {
+        runCatching {
+            val currentDisplay = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                display
+            } else {
+                @Suppress("DEPRECATION")
+                windowManager.defaultDisplay
+            } ?: return
+            val current = currentDisplay.mode
+            val best = currentDisplay.supportedModes
+                .filter {
+                    it.physicalWidth == current.physicalWidth && it.physicalHeight == current.physicalHeight
+                }
+                .maxByOrNull { it.refreshRate }
+                ?: return
+            if (best.modeId != current.modeId || best.refreshRate > current.refreshRate) {
+                window.attributes = window.attributes.also { it.preferredDisplayModeId = best.modeId }
+            }
+            AlarmLog.info("refresh_rate", "hz=${best.refreshRate}")
+        }.onFailure { AlarmLog.error("refresh_rate_failed", "", it) }
     }
 
     override fun onResume() {
