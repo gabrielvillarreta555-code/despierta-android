@@ -15,11 +15,13 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.espresso.IdlingPolicies
 import androidx.test.rule.GrantPermissionRule
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.util.concurrent.TimeUnit
 
 class DespiertaUiInstrumentedTest {
     @get:Rule(order = 0)
@@ -34,6 +36,10 @@ class DespiertaUiInstrumentedTest {
 
     @Before
     fun launchWithoutLiveClockTicker() {
+        // Experimento acotado: el emulador de CI tarda más de 12 s en mostrar la actividad.
+        // Un límite de 120 s distingue lentitud (pasará) de un bloqueo permanente (seguirá fallando).
+        IdlingPolicies.setIdlingResourceTimeout(120, TimeUnit.SECONDS)
+        IdlingPolicies.setMasterPolicyTimeout(150, TimeUnit.SECONDS)
         val context = ApplicationProvider.getApplicationContext<Context>()
         val intent = Intent(context, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
