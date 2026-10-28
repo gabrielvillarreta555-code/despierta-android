@@ -123,8 +123,8 @@ internal fun AlarmHome(
                 )
                 MoonWithStars(
                     modifier = Modifier
-                        .padding(top = safeTopInset() + 56.dp, end = 28.dp)
-                        .size(92.dp)
+                        .padding(top = safeTopInset() + 40.dp, end = 104.dp)
+                        .size(84.dp)
                         .align(Alignment.TopEnd)
                         .graphicsLayer {
                             if (motionOn && listState.firstVisibleItemIndex == 0) {

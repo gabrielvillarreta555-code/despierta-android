@@ -332,12 +332,22 @@ internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier
         val w = size.width
         val h = size.height
 
-        // Resplandor del horizonte.
+        // Resplandor del horizonte: halo amplio del tema y una franja luminosa con el acento,
+        // justo detrás de la cordillera lejana (da profundidad, como un atardecer).
         drawRect(
             brush = Brush.radialGradient(
-                listOf(palette.hero.first().copy(alpha = 0.55f), Color.Transparent),
-                center = Offset(w * 0.5f, h * 0.56f),
-                radius = w * 0.8f
+                listOf(palette.hero.first().copy(alpha = 0.65f), Color.Transparent),
+                center = Offset(w * 0.5f, h * 0.48f),
+                radius = w * 0.9f
+            )
+        )
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to Color.Transparent,
+                0.6f to lerp(palette.accent, palette.hero.first(), 0.45f).copy(alpha = 0.42f),
+                1f to Color.Transparent,
+                startY = h * 0.22f,
+                endY = h * 0.52f
             )
         )
 
@@ -371,11 +381,11 @@ internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier
         }
 
         // Cordillera lejana, media y cercana: más clara cuanto más lejos.
-        val far = lerp(palette.hero[1], palette.sky[1], 0.35f)
-        val mid = lerp(palette.hero.last(), palette.hill, 0.45f)
+        val far = lerp(palette.hero.first(), palette.sky.first(), 0.25f)
+        val mid = lerp(palette.hero[1], palette.hill, 0.35f)
         drawPath(
             ridge(0.52f, listOf(0.1f to 0.38f, 0.22f to 0.47f, 0.36f to 0.33f, 0.52f to 0.46f, 0.68f to 0.36f, 0.84f to 0.47f, 1.05f to 0.40f)),
-            color = far.copy(alpha = 0.92f)
+            color = far.copy(alpha = 0.85f)
         )
         drawPath(
             ridge(0.62f, listOf(0.08f to 0.56f, 0.24f to 0.48f, 0.42f to 0.60f, 0.58f to 0.50f, 0.76f to 0.59f, 0.92f to 0.51f, 1.05f to 0.57f)),
@@ -396,6 +406,7 @@ internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier
         )
 
         // Pinos en los bordes, de tres pisos cada uno.
+        val treeColor = lerp(palette.hill, Color.Black, 0.35f)
         fun pine(cx: Float, baseY: Float, height: Float) {
             val half = height * 0.32f
             for (tier in 0 until 3) {
@@ -409,11 +420,11 @@ internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier
                         lineTo(cx - spread, bottom)
                         close()
                     },
-                    color = palette.hill
+                    color = treeColor
                 )
             }
             drawRect(
-                palette.hill,
+                treeColor,
                 topLeft = Offset(cx - height * 0.03f, baseY - height * 0.1f),
                 size = Size(height * 0.06f, height * 0.14f)
             )
