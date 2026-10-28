@@ -22,6 +22,16 @@ y la alarma sonando se rediseñan en la 2.7.
 - Alarmas en una lista agrupada: hora, AM/PM, nombre, programación e interruptor; Editar y
   Eliminar en el menú "⋯" (con confirmación y deshacer, como antes).
 
+### Cristal (revisión tras la primera prueba en el teléfono)
+- Superficies de cristal al estilo iOS: relleno translúcido con luz desde arriba, reflejo en la
+  esquina, borde con brillo (claro arriba-izquierda, reflejo abajo-derecha) y sombra suave.
+  Ya no son tarjetas planas con el mismo contorno de siempre.
+- Reloj, próxima alarma, descanso, lista de alarmas y botón "+" (ahora circular) en cristal.
+- Barra de navegación como píldora de cristal flotante, con la pestaña activa en relieve.
+  Es común a todas las pantallas; el resto de tarjetas pasa a cristal en la 2.7.
+- Paisaje: neblina entre planos y pinos que se disuelven hacia abajo (sin cortes ni troncos
+  sueltos), pinos algo menos oscuros.
+
 ### Común
 - La app dibuja detrás de la barra de estado: desaparece la franja negra superior.
 - Margen superior seguro (barra de estado y recorte de cámara) para las cabeceras, con un

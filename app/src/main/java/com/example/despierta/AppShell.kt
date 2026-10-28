@@ -20,9 +20,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.ui.draw.alpha
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -350,15 +348,14 @@ private fun AppNavigation(
     onSelected: (AppSection) -> Unit
 ) {
     val palette = LocalDespiertaPalette.current
-    val shape = RoundedCornerShape(26.dp)
+    // Píldora de cristal flotante (2.6): sombra suave, borde con brillo y pestaña activa en relieve.
+    val shape = RoundedCornerShape(31.dp)
     Row(
         Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .clip(shape)
-            .background(palette.activeBrush)
-            .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)), shape)
+            .padding(horizontal = 14.dp, vertical = 8.dp)
+            .glass(shape, palette.active.last().copy(alpha = 0.84f), elevation = 20.dp)
             .padding(5.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -366,17 +363,21 @@ private fun AppNavigation(
         AppSection.entries.forEach { section ->
             val isSelected = selected == section
             val background by animateColorAsState(
-                targetValue = if (isSelected) palette.navIconSelected.copy(alpha = 0.16f) else Color.Transparent,
+                targetValue = if (isSelected) palette.navIconSelected.copy(alpha = 0.22f) else Color.Transparent,
                 animationSpec = tween(motion(200)),
                 label = "nav_background"
+            )
+            val sheen by animateFloatAsState(
+                targetValue = if (isSelected) 1f else 0f,
+                animationSpec = tween(motion(200)),
+                label = "nav_sheen"
             )
             val tint = if (isSelected) palette.navIconSelected else palette.navIcon
             Column(
                 Modifier
                     .weight(1f)
                     .height(56.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(background)
+                    .glass(RoundedCornerShape(26.dp), background, elevation = 0.dp, sheen = sheen)
                     .selectable(
                         selected = isSelected,
                         onClick = { onSelected(section) },

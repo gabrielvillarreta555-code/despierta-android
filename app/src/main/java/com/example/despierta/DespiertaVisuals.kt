@@ -405,8 +405,27 @@ internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier
             brush = ground
         )
 
-        // Pinos en los bordes, de tres pisos cada uno.
-        val treeColor = lerp(palette.hill, Color.Black, 0.35f)
+        // Neblina baja entre las cordilleras y los pinos: separa planos y suaviza la transición.
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to Color.Transparent,
+                0.5f to lerp(palette.hero.first(), palette.accent, 0.25f).copy(alpha = 0.16f),
+                1f to Color.Transparent,
+                startY = h * 0.56f,
+                endY = h * 0.88f
+            )
+        )
+
+        // Pinos en los bordes, de tres pisos cada uno. Se disuelven en la neblina hacia abajo,
+        // sin un corte duro donde termina el paisaje.
+        val treeColor = lerp(palette.hill, Color.Black, 0.22f)
+        val treeBrush = Brush.verticalGradient(
+            0f to treeColor,
+            0.78f to treeColor,
+            1f to treeColor.copy(alpha = 0f),
+            startY = 0f,
+            endY = h
+        )
         fun pine(cx: Float, baseY: Float, height: Float) {
             val half = height * 0.32f
             for (tier in 0 until 3) {
@@ -420,13 +439,14 @@ internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier
                         lineTo(cx - spread, bottom)
                         close()
                     },
-                    color = treeColor
+                    brush = treeBrush
                 )
             }
+            // El tronco baja hasta el final del paisaje y se desvanece con el resto.
             drawRect(
-                treeColor,
+                brush = treeBrush,
                 topLeft = Offset(cx - height * 0.03f, baseY - height * 0.1f),
-                size = Size(height * 0.06f, height * 0.14f)
+                size = Size(height * 0.06f, h - (baseY - height * 0.1f))
             )
         }
         // Pinos que enmarcan los lados, sobre el suelo cercano.

@@ -5,9 +5,7 @@ import android.os.Looper
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -186,7 +184,7 @@ internal fun AlarmHome(
             }
         }
         item(key = "list") {
-            GlowCard(
+            GlassCard(
                 modifier = Modifier
                     .padding(horizontal = DespiertaDimens.ScreenPadding)
                     .fillMaxWidth()
@@ -266,10 +264,8 @@ private fun HomeTopBar(onAddAlarm: () -> Unit) {
         }
         Box(
             Modifier
-                .size(46.dp)
-                .clip(RoundedCornerShape(15.dp))
-                .background(Color.White.copy(alpha = 0.16f))
-                .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.22f)), RoundedCornerShape(15.dp))
+                .size(48.dp)
+                .glass(CircleShape, Color.White.copy(alpha = 0.10f), elevation = 10.dp)
                 .clickable(onClick = onAddAlarm)
                 .semantics { contentDescription = "Nueva alarma" }
                 .testTag("add_alarm"),
@@ -304,9 +300,7 @@ private fun ClockCard(nowMillis: Long, animated: Boolean) {
     Column(
         Modifier
             .fillMaxWidth()
-            .clip(shape)
-            .background(palette.card.last().copy(alpha = 0.92f))
-            .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)), shape)
+            .glass(shape, palette.card.last().copy(alpha = 0.70f), elevation = 22.dp)
             .padding(horizontal = 22.dp, vertical = 18.dp)
     ) {
         Text(
@@ -350,7 +344,7 @@ private fun NextAlarmRow(
     modifier: Modifier = Modifier
 ) {
     val palette = LocalDespiertaPalette.current
-    GlowCard(modifier = modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    GlassCard(modifier = modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -401,11 +395,11 @@ private fun RestCard(
 ) {
     val palette = LocalDespiertaPalette.current
     val remaining = next?.triggerAtMillis?.minus(nowMillis)
-    GlowCard(
+    GlassCard(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onOpenSleep)
-            .testTag("sleep_duration_card")
+            .testTag("sleep_duration_card"),
+        onClick = onOpenSleep
     ) {
         Row(
             Modifier.padding(start = 18.dp, end = 10.dp, top = 14.dp, bottom = 14.dp),
@@ -441,8 +435,7 @@ private fun RestCard(
                 onClick = onOpenSleep,
                 modifier = Modifier
                     .size(42.dp)
-                    .clip(RoundedCornerShape(13.dp))
-                    .background(Color.White.copy(alpha = 0.07f))
+                    .glass(RoundedCornerShape(14.dp), Color.White.copy(alpha = 0.06f), elevation = 4.dp, sheen = 0.8f)
                     .testTag("open_sleep_planner")
             ) {
                 Icon(Icons.Rounded.EditNote, contentDescription = "Configurar horas de sueño", tint = palette.cardIcon)
