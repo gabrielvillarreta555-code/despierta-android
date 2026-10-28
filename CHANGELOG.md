@@ -3,8 +3,8 @@
 Cada versión tiene un `versionName` y un `versionCode` único y creciente en
 `app/build.gradle.kts`. CI toma la versión de ahí para nombrar los APK
 (`Despierta-<versión>.apk`, `Despierta-<versión>-fluida.apk`) y el artefacto
-(`Despierta-<versión>`). Cada versión estable queda marcada con una etiqueta de git
-(`v2.5`, `v2.6`...) para poder volver a ella.
+(`Despierta-<versión>`). Cada versión estable queda guardada en una rama
+`estable/<versión>` (por ejemplo `estable/2.5`) para poder volver a ella.
 
 ## 2.6 — versionCode 9 — Rediseño de la pantalla principal (en revisión)
 
@@ -24,10 +24,12 @@ y la alarma sonando se rediseñan en la 2.7.
 
 ### Común
 - La app dibuja detrás de la barra de estado: desaparece la franja negra superior.
+- Margen superior seguro (barra de estado y recorte de cámara) para las cabeceras, con un
+  mínimo cuando el sistema no informa del espacio.
 
 Sin cambios en el motor de alarmas ni en la programación.
 
-## 2.5 — versionCode 8 — estable (etiqueta `v2.5`)
+## 2.5 — versionCode 8 — estable (rama `estable/2.5`)
 
 ### Interfaz
 - Rediseño nocturno: fondo con degradado, tarjetas redondeadas, luna con estrellas y

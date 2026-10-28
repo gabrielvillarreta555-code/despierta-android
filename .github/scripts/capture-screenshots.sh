@@ -35,7 +35,7 @@ demo network -e wifi show -e level 4 -e mobile show -e datatype 4g -e level 4
 demo notifications -e visible false
 adb shell settings put system font_scale 1.0 >/dev/null 2>&1 || true
 
-timeout 900 adb shell am instrument -w -r \
+timeout 1500 adb shell am instrument -w -r \
   -e class com.example.despierta.ScreenshotTour \
   "$runner" > "$output_dir/instrumentation.txt" 2>&1
 status=$?

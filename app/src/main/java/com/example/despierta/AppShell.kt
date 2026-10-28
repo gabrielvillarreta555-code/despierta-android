@@ -310,7 +310,7 @@ private fun BrandBar(onAddAlarm: (() -> Unit)? = null) {
     Row(
         Modifier
             .fillMaxWidth()
-            .statusBarsPadding()
+            .padding(top = safeTopInset())
             .height(64.dp)
             .padding(horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically

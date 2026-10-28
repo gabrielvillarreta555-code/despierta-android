@@ -336,8 +336,8 @@ internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier
         drawRect(
             brush = Brush.radialGradient(
                 listOf(palette.hero.first().copy(alpha = 0.55f), Color.Transparent),
-                center = Offset(w * 0.5f, h * 0.66f),
-                radius = w * 0.85f
+                center = Offset(w * 0.5f, h * 0.56f),
+                radius = w * 0.8f
             )
         )
 
@@ -349,7 +349,7 @@ internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier
         }
         repeat(46) {
             val x = next() * w
-            val y = (0.06f + next() * 0.46f) * h
+            val y = (0.04f + next() * 0.40f) * h
             val r = (0.7f + next() * 1.3f) * density
             drawCircle(Color.White.copy(alpha = 0.25f + next() * 0.6f), r, Offset(x, y))
         }
@@ -374,24 +374,24 @@ internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier
         val far = lerp(palette.hero[1], palette.sky[1], 0.35f)
         val mid = lerp(palette.hero.last(), palette.hill, 0.45f)
         drawPath(
-            ridge(0.62f, listOf(0.12f to 0.50f, 0.26f to 0.58f, 0.42f to 0.44f, 0.58f to 0.56f, 0.74f to 0.47f, 0.9f to 0.57f, 1.05f to 0.52f)),
-            color = far.copy(alpha = 0.9f)
+            ridge(0.52f, listOf(0.1f to 0.38f, 0.22f to 0.47f, 0.36f to 0.33f, 0.52f to 0.46f, 0.68f to 0.36f, 0.84f to 0.47f, 1.05f to 0.40f)),
+            color = far.copy(alpha = 0.92f)
         )
         drawPath(
-            ridge(0.72f, listOf(0.1f to 0.66f, 0.24f to 0.60f, 0.4f to 0.70f, 0.56f to 0.61f, 0.72f to 0.69f, 0.88f to 0.62f, 1.05f to 0.68f)),
+            ridge(0.62f, listOf(0.08f to 0.56f, 0.24f to 0.48f, 0.42f to 0.60f, 0.58f to 0.50f, 0.76f to 0.59f, 0.92f to 0.51f, 1.05f to 0.57f)),
             color = mid
         )
 
         // Suelo cercano que se funde con el fondo de la pantalla.
         val ground = Brush.verticalGradient(
             0f to palette.hill,
-            0.82f to palette.hill,
+            0.55f to palette.hill,
             1f to palette.hill.copy(alpha = 0f),
-            startY = h * 0.74f,
+            startY = h * 0.64f,
             endY = h
         )
         drawPath(
-            ridge(0.84f, listOf(0.2f to 0.80f, 0.5f to 0.86f, 0.8f to 0.79f, 1.05f to 0.83f)),
+            ridge(0.72f, listOf(0.2f to 0.68f, 0.5f to 0.74f, 0.8f to 0.67f, 1.05f to 0.71f)),
             brush = ground
         )
 
@@ -418,8 +418,11 @@ internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier
                 size = Size(height * 0.06f, height * 0.14f)
             )
         }
-        val treeBase = h * 0.9f
-        listOf(0.03f to 0.30f, 0.10f to 0.38f, 0.17f to 0.26f, 0.85f to 0.27f, 0.92f to 0.36f, 0.985f to 0.31f)
-            .forEach { (x, th) -> pine(w * x, treeBase, h * th) }
+        // Pinos que enmarcan los lados, sobre el suelo cercano.
+        val treeBase = h * 0.80f
+        listOf(
+            0.02f to 0.44f, 0.08f to 0.52f, 0.145f to 0.38f, 0.205f to 0.30f,
+            0.80f to 0.30f, 0.86f to 0.40f, 0.925f to 0.50f, 0.985f to 0.42f
+        ).forEach { (x, th) -> pine(w * x, treeBase, h * th) }
     }
 }

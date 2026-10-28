@@ -12,6 +12,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso
+import androidx.test.espresso.IdlingPolicies
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -22,6 +23,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.Calendar
+import java.util.concurrent.TimeUnit
 
 /**
  * Recorrido de capturas para revisar el diseño. No forma parte de las suites de pruebas:
@@ -44,6 +46,9 @@ class ScreenshotTour {
     fun captureMainScreens() {
         outputDir.deleteRecursively()
         outputDir.mkdirs()
+        // Un paso atascado falla rápido en lugar de consumir el tiempo de todo el recorrido.
+        IdlingPolicies.setIdlingResourceTimeout(25, TimeUnit.SECONDS)
+        IdlingPolicies.setMasterPolicyTimeout(30, TimeUnit.SECONDS)
         seedDemoData()
         try {
             // Cada grupo abre la app desde cero: si una pantalla falla, las demás no se pierden.
@@ -54,6 +59,9 @@ class ScreenshotTour {
                     composeRule.onNodeWithTag("alarm_home").performScrollToNode(hasTestTag("alarm_toggle_$ALARM_WORK"))
                 }
             }
+            // Alarmas en los otros temas, al principio: son las capturas clave de la 2.6.
+            runCatching { withApp(ThemeChoice("amanecer", null)) { capture("13-tema-amanecer") } }
+            runCatching { withApp(ThemeChoice("bosque", null)) { capture("14-tema-bosque") } }
             session {
                 step("03-editor-alarma") {
                     // 2.6: Editar está en el menú "⋯" de cada fila.
@@ -96,8 +104,6 @@ class ScreenshotTour {
                     composeRule.onNodeWithTag("settings_notifications").performScrollTo().performClick()
                 }
             }
-            withApp(ThemeChoice("amanecer", null)) { capture("13-tema-amanecer") }
-            withApp(ThemeChoice("bosque", null)) { capture("14-tema-bosque") }
             step("15-alarma-sonando") {
                 val intent = Intent(context, AlarmActivity::class.java)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

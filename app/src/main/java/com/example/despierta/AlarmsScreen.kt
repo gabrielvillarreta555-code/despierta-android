@@ -79,8 +79,8 @@ import java.time.format.DateTimeFormatter
 private val TabularFigures = TextStyle(fontFeatureSettings = "tnum")
 
 /** Altura del paisaje y punto donde el reloj se superpone a él. */
-private val SceneHeight = 300.dp
-private val ClockOverlap = 214.dp
+private val SceneHeight = 330.dp
+private val ClockOverlap = 258.dp
 
 @Composable
 internal fun AlarmHome(
@@ -123,7 +123,7 @@ internal fun AlarmHome(
                 )
                 MoonWithStars(
                     modifier = Modifier
-                        .padding(top = 64.dp, end = 26.dp)
+                        .padding(top = safeTopInset() + 56.dp, end = 28.dp)
                         .size(92.dp)
                         .align(Alignment.TopEnd)
                         .graphicsLayer {
@@ -251,8 +251,7 @@ private fun HomeTopBar(onAddAlarm: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(start = 22.dp, end = 18.dp, top = 10.dp),
+            .padding(start = 22.dp, end = 18.dp, top = safeTopInset() + 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
@@ -377,10 +376,10 @@ private fun NextAlarmRow(
                     formatTimeUntil(next.triggerAtMillis - nowMillis),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = palette.onAccent,
+                    color = palette.accentSoft,
                     modifier = Modifier
                         .clip(RoundedCornerShape(10.dp))
-                        .background(palette.accent)
+                        .background(palette.accent.copy(alpha = 0.18f))
                         .padding(horizontal = 10.dp, vertical = 5.dp)
                         .testTag("next_alarm_countdown")
                 )

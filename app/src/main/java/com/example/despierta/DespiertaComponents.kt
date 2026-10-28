@@ -9,6 +9,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -43,6 +48,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
+/**
+ * Margen superior seguro para contenido dibujado de borde a borde: barra de estado y recorte
+ * de cámara, con un mínimo por si el sistema no informa del espacio (ocurre en algunos
+ * emuladores y en pantallas sin barra de estado visible).
+ */
+@Composable
+internal fun safeTopInset(minimum: Dp = 28.dp): Dp {
+    val reported = WindowInsets.safeDrawing.only(WindowInsetsSides.Top).asPaddingValues().calculateTopPadding()
+    return if (reported > minimum) reported else minimum
+}
 
 /**
  * Componentes visuales reutilizables de Despierta y sus medidas comunes.
