@@ -46,15 +46,19 @@ class ScreenshotTour {
         outputDir.mkdirs()
         seedDemoData()
         try {
-            withApp(ThemeChoice.DEFAULT) {
+            // Cada grupo abre la app desde cero: si una pantalla falla, las demás no se pierden.
+            session {
                 capture("01-alarmas")
                 step("02-alarmas-lista") {
-                    // El interruptor es un nodo propio; el texto de la hora se fusiona con la tarjeta.
+                    // El interruptor es un nodo propio; el texto de la hora se fusiona con la fila.
                     composeRule.onNodeWithTag("alarm_home").performScrollToNode(hasTestTag("alarm_toggle_$ALARM_WORK"))
                 }
+            }
+            session {
                 step("03-editor-alarma") {
                     // 2.6: Editar está en el menú "⋯" de cada fila.
-                    composeRule.onNodeWithTag("alarm_more_$ALARM_WORK").performScrollTo().performClick()
+                    composeRule.onNodeWithTag("alarm_home").performScrollToNode(hasTestTag("alarm_more_$ALARM_WORK"))
+                    composeRule.onNodeWithTag("alarm_more_$ALARM_WORK").performClick()
                     composeRule.onNodeWithTag("alarm_edit_$ALARM_WORK").performClick()
                     // El editor tarda en quedar inactivo en emuladores lentos: una espera extra.
                     runCatching { composeRule.waitForIdle() }
@@ -62,11 +66,13 @@ class ScreenshotTour {
                 step("04-editor-opciones") {
                     composeRule.onNodeWithTag("snooze_5").performScrollTo()
                 }
-                closeDialog()
+            }
+            session {
                 step("05-editor-nueva") {
                     composeRule.onNodeWithTag("add_alarm").performClick()
                 }
-                closeDialog()
+            }
+            session {
                 step("06-sueno") { composeRule.onNodeWithTag("nav_sleep").performClick() }
                 step("07-sueno-editar") {
                     composeRule.onNodeWithTag("sleep_wake_card").performClick()
@@ -74,13 +80,19 @@ class ScreenshotTour {
                 step("08-sueno-opciones") {
                     composeRule.onNodeWithTag("sleep_reminder_row").performScrollTo()
                 }
+            }
+            session {
                 step("09-turnos") { composeRule.onNodeWithTag("nav_shifts").performClick() }
+            }
+            session {
                 step("10-ajustes") { composeRule.onNodeWithTag("nav_settings").performClick() }
                 step("11-ajustes-apariencia") {
                     composeRule.onNodeWithTag("settings_appearance").performScrollTo().performClick()
                 }
+            }
+            session {
                 step("12-ajustes-notificaciones") {
-                    composeRule.onNodeWithTag("settings_back").performClick()
+                    composeRule.onNodeWithTag("nav_settings").performClick()
                     composeRule.onNodeWithTag("settings_notifications").performScrollTo().performClick()
                 }
             }
@@ -112,6 +124,12 @@ class ScreenshotTour {
             failed += name
             Log.e(TAG, "captura_fallida $name", it)
         }
+    }
+
+    /** Abre la app con el tema predeterminado; un fallo aquí no detiene el recorrido. */
+    private fun session(block: () -> Unit) {
+        runCatching { withApp(ThemeChoice.DEFAULT, block) }
+            .onFailure { Log.e(TAG, "sesion_fallida", it) }
     }
 
     private fun withApp(theme: ThemeChoice, block: () -> Unit) {
