@@ -17,7 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathOperation
@@ -331,9 +335,29 @@ internal fun NightScene(
     palette: DespiertaPalette,
     modifier: Modifier = Modifier,
     twinkle: () -> Float = { -1f },
-    style: SceneStyle = SceneStyle.BOSQUE
+    style: SceneStyle = SceneStyle.BOSQUE,
+    fadeBottom: Boolean = false
 ) {
-    Canvas(modifier) {
+    // 2.9: en la pantalla principal el paisaje terminaba en un corte recto visible a los lados
+    // de la tarjeta del reloj. Con fadeBottom su parte baja se funde con el fondo de la pantalla.
+    val fade = if (fadeBottom) {
+        Modifier
+            .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+            .drawWithContent {
+                drawContent()
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        0f to Color.Black,
+                        0.78f to Color.Black,
+                        1f to Color.Transparent
+                    ),
+                    blendMode = BlendMode.DstIn
+                )
+            }
+    } else {
+        Modifier
+    }
+    Canvas(modifier.then(fade)) {
         val w = size.width
         val h = size.height
 

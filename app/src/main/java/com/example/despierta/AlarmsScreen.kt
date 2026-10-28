@@ -129,6 +129,7 @@ internal fun AlarmHome(
                     palette = palette,
                     style = LocalUiOptions.current.scene,
                     twinkle = { twinkleState?.value ?: -1f },
+                    fadeBottom = true,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(SceneHeight)

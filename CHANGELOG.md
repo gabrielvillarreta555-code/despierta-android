@@ -15,6 +15,8 @@ Cada versión tiene un `versionName` y un `versionCode` único y creciente en
 - La sección Fondo muestra los cinco fondos en dos filas para que cada vista
   previa conserve su tamaño.
 - Mismo contraste mínimo que los demás fondos (prueba `selectableColorsKeepTextReadable`).
+- El paisaje de la pantalla principal ya no termina en un corte recto a los lados
+  de la tarjeta del reloj: su parte baja se funde con el fondo (en todos los temas).
 - Sin cambios en el motor de alarmas.
 
 ## 2.8 — versionCode 11 — Preparación para Google Play
