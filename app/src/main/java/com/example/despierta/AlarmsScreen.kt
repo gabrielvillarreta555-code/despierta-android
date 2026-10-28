@@ -1,5 +1,10 @@
 package com.example.despierta
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.geometry.Offset
 import android.os.Handler
 import android.os.Looper
 import androidx.compose.animation.animateContentSize
@@ -98,6 +103,16 @@ internal fun AlarmHome(
     // Confirmación antes de eliminar: la alarma solo se borra si el usuario lo confirma.
     var pendingDelete by remember { mutableStateOf<AlarmModel?>(null) }
     val listState = rememberLazyListState()
+    val twinkleState = if (animated && motionOn) {
+        rememberInfiniteTransition(label = "stars").animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(7000, easing = LinearEasing)),
+            label = "twinkle"
+        )
+    } else {
+        null
+    }
 
     LazyColumn(
         state = listState,
@@ -110,6 +125,7 @@ internal fun AlarmHome(
                 // El paisaje se desplaza más despacio que la lista (paralaje discreto).
                 NightScene(
                     palette = palette,
+                    twinkle = { twinkleState?.value ?: -1f },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(SceneHeight)
@@ -265,13 +281,13 @@ private fun HomeTopBar(onAddAlarm: () -> Unit) {
         Box(
             Modifier
                 .size(48.dp)
-                .glass(CircleShape, Color.White.copy(alpha = 0.10f), elevation = 10.dp)
+                .glass(CircleShape, palette.accent.copy(alpha = 0.88f), elevation = 12.dp)
                 .clickable(onClick = onAddAlarm)
                 .semantics { contentDescription = "Nueva alarma" }
                 .testTag("add_alarm"),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Rounded.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp))
+            Icon(Icons.Rounded.Add, contentDescription = null, tint = palette.onAccent, modifier = Modifier.size(26.dp))
         }
     }
 }
@@ -315,15 +331,16 @@ private fun ClockCard(nowMillis: Long, animated: Boolean) {
         ) {
             Text(
                 time,
-                fontSize = 68.sp,
-                lineHeight = 72.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = (-1.5).sp,
-                style = TabularFigures,
-                color = palette.textPrimary
+                fontSize = 78.sp,
+                lineHeight = 80.sp,
+                fontWeight = FontWeight.Light,
+                letterSpacing = (-2.5).sp,
+                // Resplandor del color del tema detrás de las cifras.
+                style = TabularFigures.copy(shadow = Shadow(palette.accent.copy(alpha = 0.6f), Offset.Zero, 36f)),
+                color = Color.White
             )
             Column(Modifier.padding(start = 10.dp)) {
-                Text(period, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = palette.accentSoft)
+                Text(period, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = palette.accent)
                 Text(
                     now.format(DateTimeFormatter.ofPattern(":ss")),
                     fontSize = 15.sp,
@@ -495,11 +512,10 @@ private fun AlarmRow(
                 color = palette.textSoft
             )
         }
-        Switch(
+        DespiertaSwitch(
             checked = alarm.enabled,
             onCheckedChange = onToggle,
-            colors = despiertaSwitchColors(),
-            modifier = Modifier.testTag("alarm_toggle_${alarm.id}")
+            modifier = Modifier.padding(end = 4.dp).testTag("alarm_toggle_${alarm.id}")
         )
         Box {
             IconButton(

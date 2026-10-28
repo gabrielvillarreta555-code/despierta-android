@@ -363,7 +363,7 @@ private fun AppNavigation(
         AppSection.entries.forEach { section ->
             val isSelected = selected == section
             val background by animateColorAsState(
-                targetValue = if (isSelected) palette.navIconSelected.copy(alpha = 0.22f) else Color.Transparent,
+                targetValue = if (isSelected) palette.navIconSelected.copy(alpha = 0.32f) else Color.Transparent,
                 animationSpec = tween(motion(200)),
                 label = "nav_background"
             )

@@ -1,5 +1,7 @@
 package com.example.despierta
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -115,6 +117,53 @@ internal fun despiertaSwitchColors(): SwitchColors {
         uncheckedTrackColor = Color.White.copy(alpha = 0.14f),
         uncheckedBorderColor = Color.Transparent
     )
+}
+
+/**
+ * Interruptor propio (2.6): pista redondeada con degradado del acento cuando está activo,
+ * botón blanco con sombra que se desliza. Con [onCheckedChange] nulo solo se dibuja (la fila
+ * entera es la que cambia el valor, como en Ajustes).
+ */
+@Composable
+internal fun DespiertaSwitch(
+    checked: Boolean,
+    onCheckedChange: ((Boolean) -> Unit)?,
+    modifier: Modifier = Modifier
+) {
+    val palette = LocalDespiertaPalette.current
+    val offset by animateDpAsState(
+        targetValue = if (checked) 22.dp else 3.dp,
+        animationSpec = tween(motion(180)),
+        label = "switch_thumb"
+    )
+    val trackBrush = if (checked) {
+        Brush.horizontalGradient(listOf(palette.accentSoft, palette.accent))
+    } else {
+        Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.16f), Color.White.copy(alpha = 0.12f)))
+    }
+    Box(
+        modifier
+            .then(
+                if (onCheckedChange != null) {
+                    Modifier.toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
+                } else {
+                    Modifier
+                }
+            )
+            .size(width = 51.dp, height = 31.dp)
+            .clip(RoundedCornerShape(50))
+            .background(trackBrush)
+            .border(BorderStroke(1.dp, Color.White.copy(alpha = if (checked) 0.25f else 0.10f)), RoundedCornerShape(50)),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Box(
+            Modifier
+                .padding(start = offset)
+                .size(26.dp)
+                .shadow(3.dp, CircleShape)
+                .background(Color.White, CircleShape)
+        )
+    }
 }
 
 /** Tarjeta con esquinas amplias (al estilo iOS), degradado del tema y borde de luz muy fino. */
@@ -445,7 +494,7 @@ internal fun SwitchRow(
             SettingTitle(title)
             SettingSubtitle(subtitle)
         }
-        Switch(checked = checked, onCheckedChange = null, colors = despiertaSwitchColors())
+        DespiertaSwitch(checked = checked, onCheckedChange = null)
     }
 }
 

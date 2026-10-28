@@ -327,7 +327,7 @@ internal fun SleepDial(
  * (Noche, Amanecer o Bosque), así que se adapta sin imágenes. El suelo se funde con el fondo.
  */
 @Composable
-internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier) {
+internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier, twinkle: () -> Float = { -1f }) {
     Canvas(modifier) {
         val w = size.width
         val h = size.height
@@ -357,11 +357,15 @@ internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier
             seed = seed * 1103515245 + 12345
             return ((seed ushr 8) and 0xFFFF) / 65535f
         }
-        repeat(46) {
+        // Las estrellas titilan (fase leída al dibujar: no recompone la pantalla).
+        val phase = twinkle()
+        repeat(46) { i ->
             val x = next() * w
             val y = (0.04f + next() * 0.40f) * h
             val r = (0.7f + next() * 1.3f) * density
-            drawCircle(Color.White.copy(alpha = 0.25f + next() * 0.6f), r, Offset(x, y))
+            val base = 0.25f + next() * 0.6f
+            val alpha = if (phase < 0f) base else base * (0.35f + 0.65f * ((sin(phase * 2f * PI.toFloat() + i * 1.9f) + 1f) / 2f))
+            drawCircle(Color.White.copy(alpha = alpha), r, Offset(x, y))
         }
 
         fun ridge(base: Float, peaks: List<Pair<Float, Float>>): Path = Path().apply {
