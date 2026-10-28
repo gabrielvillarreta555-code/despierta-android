@@ -137,9 +137,9 @@ run_suite \
   "$diagnostics_dir/alarm-screen-instrumentation.txt"
 adb shell settings put system font_scale 1.0 || true
 
-if adb exec-out run-as "$app_package" cat files/Despierta-2.5-Alarma-activa.png \
-  > "$diagnostics_dir/Despierta-2.5-Alarma-activa.png" \
-  && [[ -s "$diagnostics_dir/Despierta-2.5-Alarma-activa.png" ]]; then
+if adb exec-out run-as "$app_package" cat files/Despierta-Alarma-activa.png \
+  > "$diagnostics_dir/Despierta-Alarma-activa.png" \
+  && [[ -s "$diagnostics_dir/Despierta-Alarma-activa.png" ]]; then
   echo "Captura de alarma activa recuperada"
 else
   failures=$((failures + 1))
@@ -149,8 +149,8 @@ fi
 reset_app_state
 if adb shell am start -W -n "$app_package/.MainActivity" \
   && sleep 3 \
-  && adb exec-out screencap -p > "$diagnostics_dir/Despierta-2.5-Inicio.png" \
-  && [[ -s "$diagnostics_dir/Despierta-2.5-Inicio.png" ]]; then
+  && adb exec-out screencap -p > "$diagnostics_dir/Despierta-Inicio.png" \
+  && [[ -s "$diagnostics_dir/Despierta-Inicio.png" ]]; then
   echo "Captura de inicio recuperada"
 else
   failures=$((failures + 1))
