@@ -1,0 +1,12 @@
+--------- beginning of main
+I/DespiertaAnuncios(15034): consent_update_error code=2
+I/DespiertaAnuncios(15034): sdk_initialized
+I/DespiertaAnuncios(15034): banner_requested
+I/DespiertaAnuncios(15034): memoria_pss_kb sin_anuncios=-1 con_anuncios=-1 diferencia=0 banner_cargado=false eventos=[consent_update_error code=2, sdk_initialized, banner_requested]
+I/DespiertaAnuncios(15034): banner_requested
+I/DespiertaAnuncios(15034): banner_failed code=2
+I/DespiertaAnuncios(15034): alarma_con_anuncios sono=true eventos=[consent_update_error code=2, sdk_initialized, banner_requested, banner_requested, banner_failed code=2]
+I/DespiertaAnuncios(15034): banner_failed code=2
+I/DespiertaAnuncios(15034): banner_requested
+I/DespiertaAnuncios(15034): sin_internet sono=true eventos_nuevos=[banner_failed code=2, banner_requested]
+I/DespiertaAnuncios(15034): banner_failed code=0
