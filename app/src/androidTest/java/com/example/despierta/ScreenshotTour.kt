@@ -53,9 +53,9 @@ class ScreenshotTour {
                     composeRule.onNodeWithTag("alarm_home").performScrollToNode(hasTestTag("alarm_toggle_$ALARM_WORK"))
                 }
                 step("03-editor-alarma") {
-                    composeRule.onNodeWithTag("alarm_edit_$ALARM_WORK", useUnmergedTree = true)
-                        .performScrollTo()
-                        .performClick()
+                    // 2.6: Editar está en el menú "⋯" de cada fila.
+                    composeRule.onNodeWithTag("alarm_more_$ALARM_WORK").performScrollTo().performClick()
+                    composeRule.onNodeWithTag("alarm_edit_$ALARM_WORK").performClick()
                     // El editor tarda en quedar inactivo en emuladores lentos: una espera extra.
                     runCatching { composeRule.waitForIdle() }
                 }

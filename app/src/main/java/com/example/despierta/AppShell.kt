@@ -205,7 +205,7 @@ internal fun DespiertaApp(
         val ticker = object : Runnable {
             override fun run() {
                 // Las pantallas solo necesitan la hora al minuto: así no se recalcula todo cada
-                // segundo. La tarjeta del reloj lleva su propio segundero (TimeHero).
+                // segundo. La tarjeta del reloj lleva su propio segundero (ClockCard).
                 nowMillis = System.currentTimeMillis()
                 val nextTick = (60_000L - nowMillis % 60_000L).coerceAtLeast(250L)
                 handler.postDelayed(this, nextTick)
@@ -222,8 +222,10 @@ internal fun DespiertaApp(
             containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             snackbarHost = { SnackbarHost(snackbarHostState) },
+            // En Alarmas la cabecera forma parte del paisaje (AlarmHome); el resto de pantallas
+            // mantiene la cabecera común hasta su rediseño en la 2.7.
             topBar = {
-                BrandBar(onAddAlarm = if (section == AppSection.ALARMS) onAddAlarm else null)
+                if (section != AppSection.ALARMS) BrandBar()
             },
             bottomBar = {
                 AppNavigation(
@@ -248,6 +250,7 @@ internal fun DespiertaApp(
                         nowMillis = nowMillis,
                         sleepPlan = sleepSchedule.plan,
                         animated = liveClockUpdates,
+                        onAddAlarm = onAddAlarm,
                         onEditAlarm = onEditAlarm,
                         onToggleAlarm = onToggleAlarm,
                         onDeleteAlarm = onDeleteAlarm,

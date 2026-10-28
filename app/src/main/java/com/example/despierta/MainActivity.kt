@@ -9,6 +9,8 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,6 +39,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         AlarmService.ensureNotificationChannel(this)
         requestHighestRefreshRate()
+        // Dibuja detrás de las barras del sistema (sin franja negra arriba) con iconos claros.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+        )
         setContent { AlarmApp(resumeGeneration) }
     }
 

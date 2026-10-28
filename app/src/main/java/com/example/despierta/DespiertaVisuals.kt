@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlin.math.PI
@@ -315,5 +316,110 @@ internal fun SleepDial(
             radius = knob,
             center = wakePoint
         )
+    }
+}
+
+// ---------- Paisaje de la cabecera (2.6) ----------
+
+/**
+ * Escena nocturna a sangre para la cabecera de Alarmas: resplandor en el horizonte, estrellas,
+ * tres cordilleras con profundidad y pinos en primer plano. Los colores salen del tema
+ * (Noche, Amanecer o Bosque), así que se adapta sin imágenes. El suelo se funde con el fondo.
+ */
+@Composable
+internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val w = size.width
+        val h = size.height
+
+        // Resplandor del horizonte.
+        drawRect(
+            brush = Brush.radialGradient(
+                listOf(palette.hero.first().copy(alpha = 0.55f), Color.Transparent),
+                center = Offset(w * 0.5f, h * 0.66f),
+                radius = w * 0.85f
+            )
+        )
+
+        // Estrellas en posiciones fijas (generador determinista, mismas en cada dibujo).
+        var seed = 0x2F6E2B1
+        fun next(): Float {
+            seed = seed * 1103515245 + 12345
+            return ((seed ushr 8) and 0xFFFF) / 65535f
+        }
+        repeat(46) {
+            val x = next() * w
+            val y = (0.06f + next() * 0.46f) * h
+            val r = (0.7f + next() * 1.3f) * density
+            drawCircle(Color.White.copy(alpha = 0.25f + next() * 0.6f), r, Offset(x, y))
+        }
+
+        fun ridge(base: Float, peaks: List<Pair<Float, Float>>): Path = Path().apply {
+            moveTo(0f, h * base)
+            var prev = Offset(0f, h * base)
+            for ((px, py) in peaks) {
+                val point = Offset(w * px, h * py)
+                val mid = Offset((prev.x + point.x) / 2f, (prev.y + point.y) / 2f)
+                @Suppress("DEPRECATION")
+                quadraticBezierTo(prev.x, prev.y, mid.x, mid.y)
+                prev = point
+            }
+            lineTo(w, prev.y)
+            lineTo(w, h)
+            lineTo(0f, h)
+            close()
+        }
+
+        // Cordillera lejana, media y cercana: más clara cuanto más lejos.
+        val far = lerp(palette.hero[1], palette.sky[1], 0.35f)
+        val mid = lerp(palette.hero.last(), palette.hill, 0.45f)
+        drawPath(
+            ridge(0.62f, listOf(0.12f to 0.50f, 0.26f to 0.58f, 0.42f to 0.44f, 0.58f to 0.56f, 0.74f to 0.47f, 0.9f to 0.57f, 1.05f to 0.52f)),
+            color = far.copy(alpha = 0.9f)
+        )
+        drawPath(
+            ridge(0.72f, listOf(0.1f to 0.66f, 0.24f to 0.60f, 0.4f to 0.70f, 0.56f to 0.61f, 0.72f to 0.69f, 0.88f to 0.62f, 1.05f to 0.68f)),
+            color = mid
+        )
+
+        // Suelo cercano que se funde con el fondo de la pantalla.
+        val ground = Brush.verticalGradient(
+            0f to palette.hill,
+            0.82f to palette.hill,
+            1f to palette.hill.copy(alpha = 0f),
+            startY = h * 0.74f,
+            endY = h
+        )
+        drawPath(
+            ridge(0.84f, listOf(0.2f to 0.80f, 0.5f to 0.86f, 0.8f to 0.79f, 1.05f to 0.83f)),
+            brush = ground
+        )
+
+        // Pinos en los bordes, de tres pisos cada uno.
+        fun pine(cx: Float, baseY: Float, height: Float) {
+            val half = height * 0.32f
+            for (tier in 0 until 3) {
+                val top = baseY - height + tier * height * 0.24f
+                val bottom = top + height * 0.46f
+                val spread = half * (0.55f + tier * 0.25f)
+                drawPath(
+                    Path().apply {
+                        moveTo(cx, top)
+                        lineTo(cx + spread, bottom)
+                        lineTo(cx - spread, bottom)
+                        close()
+                    },
+                    color = palette.hill
+                )
+            }
+            drawRect(
+                palette.hill,
+                topLeft = Offset(cx - height * 0.03f, baseY - height * 0.1f),
+                size = Size(height * 0.06f, height * 0.14f)
+            )
+        }
+        val treeBase = h * 0.9f
+        listOf(0.03f to 0.30f, 0.10f to 0.38f, 0.17f to 0.26f, 0.85f to 0.27f, 0.92f to 0.36f, 0.985f to 0.31f)
+            .forEach { (x, th) -> pine(w * x, treeBase, h * th) }
     }
 }

@@ -198,3 +198,18 @@ internal fun formatSleepDuration(remainingMillis: Long): String {
 }
 
 internal val SPANISH = Locale("es", "ES")
+
+/** Cuenta atrás legible: "en 7 h 33 min", "en 12 min", "en 1 d 2 h", "en menos de 1 min". */
+internal fun formatTimeUntil(remainingMillis: Long): String {
+    val totalMinutes = (remainingMillis.coerceAtLeast(0L) + 59_999L) / 60_000L
+    if (remainingMillis <= 0L) return "Ahora"
+    if (totalMinutes <= 1L && remainingMillis < 60_000L) return "en menos de 1 min"
+    val days = totalMinutes / (24 * 60)
+    val hours = (totalMinutes % (24 * 60)) / 60
+    val minutes = totalMinutes % 60
+    return when {
+        days > 0 -> if (hours > 0) "en $days d $hours h" else "en $days d"
+        hours > 0 -> if (minutes > 0) "en $hours h $minutes min" else "en $hours h"
+        else -> "en $minutes min"
+    }
+}

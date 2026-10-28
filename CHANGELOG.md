@@ -6,11 +6,26 @@ Cada versión tiene un `versionName` y un `versionCode` único y creciente en
 (`Despierta-<versión>`). Cada versión estable queda marcada con una etiqueta de git
 (`v2.5`, `v2.6`...) para poder volver a ella.
 
-## 2.6 — Rediseño de la pantalla principal (en desarrollo)
+## 2.6 — versionCode 9 — Rediseño de la pantalla principal (en revisión)
 
-Planificada: nueva composición de Alarmas (paisaje integrado en la cabecera, reloj
-superpuesto, próxima alarma compacta, lista agrupada, navegación refinada y animaciones
-discretas). Solo cambia la pantalla de Alarmas y la estructura común que necesita.
+Solo cambia la pantalla de Alarmas y lo común que necesita. Sueño, Turnos, Ajustes, el editor
+y la alarma sonando se rediseñan en la 2.7.
+
+### Alarmas
+- Paisaje nocturno a sangre en la cabecera (cielo, resplandor, tres cordilleras, pinos y
+  estrellas) con los colores de cada tema; la luna y el paisaje se desplazan con un paralaje
+  discreto.
+- "DESPIERTA" y el botón "+" sobre el cielo, sin tarjeta.
+- Reloj grande en una tarjeta superpuesta al paisaje, con cifras de ancho fijo.
+- Próxima alarma como fila compacta con cuenta atrás legible ("en 7 h 33 min").
+- Descanso estimado en una tarjeta compacta con el horario de sueño.
+- Alarmas en una lista agrupada: hora, AM/PM, nombre, programación e interruptor; Editar y
+  Eliminar en el menú "⋯" (con confirmación y deshacer, como antes).
+
+### Común
+- La app dibuja detrás de la barra de estado: desaparece la franja negra superior.
+
+Sin cambios en el motor de alarmas ni en la programación.
 
 ## 2.5 — versionCode 8 — estable (etiqueta `v2.5`)
 
