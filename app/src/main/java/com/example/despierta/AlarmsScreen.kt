@@ -8,6 +8,7 @@ import androidx.compose.ui.geometry.Offset
 import android.os.Handler
 import android.os.Looper
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
