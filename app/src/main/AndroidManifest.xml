@@ -25,6 +25,14 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="${admobAppId}" />
+        <!-- 2.8 (opción 2): el SDK de anuncios no se inicia al arrancar el proceso. Sin esto se
+             conectaba a Google Play Services también cuando una alarma despierta la app, y si
+             Play Services se reiniciaba, Android cerraba Despierta con la alarma sonando.
+             El SDK solo se inicia desde MainActivity (AdsManager). -->
+        <provider
+            android:name="com.google.android.gms.ads.MobileAdsInitProvider"
+            android:authorities="${applicationId}.mobileadsinitprovider"
+            tools:node="remove" />
         <activity
             android:name=".AlarmActivity"
             android:excludeFromRecents="true"

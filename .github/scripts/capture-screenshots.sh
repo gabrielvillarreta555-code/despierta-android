@@ -8,8 +8,8 @@ set -uo pipefail
 output_dir="${1:?Debe indicarse el directorio de salida}"
 mkdir -p "$output_dir"
 
-app_package="com.example.despierta"
-runner="com.example.despierta.test/androidx.test.runner.AndroidJUnitRunner"
+app_package="com.bluelabstudios.despierta"
+runner="com.bluelabstudios.despierta.test/androidx.test.runner.AndroidJUnitRunner"
 
 demo() {
   adb shell am broadcast -a com.android.systemui.demo -e command "$@" >> "$output_dir/demo-mode.txt" 2>&1 || true

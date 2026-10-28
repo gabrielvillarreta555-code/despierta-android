@@ -6,8 +6,8 @@ diagnostics_dir="${1:?Debe indicarse el directorio de diagnósticos}"
 platform_label="${2:?Debe indicarse la versión de Android}"
 mkdir -p "$diagnostics_dir"
 
-app_package="com.example.despierta"
-test_package="com.example.despierta.test"
+app_package="com.bluelabstudios.despierta"
+test_package="com.bluelabstudios.despierta.test"
 runner="$test_package/androidx.test.runner.AndroidJUnitRunner"
 failures=0
 

@@ -4,7 +4,7 @@ name: AdMob experimental
 # APK, ejecuta las suites de alarmas y la prueba de impacto de anuncios. No publica APK.
 on:
   push:
-    branches: [ 'experimental/**' ]
+    branches: [ 'experimental/**', 'release/**' ]
 
 concurrency:
   group: admob-${{ github.ref_name }}
@@ -28,7 +28,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          ./gradlew testDebugUnitTest lintDebug assembleDebug assembleRelease --stacktrace > build.log 2>&1
+          ./gradlew testDebugUnitTest lintDebug assembleDebug assembleRelease bundleRelease --stacktrace > build.log 2>&1
           status=$?
           if [ $status -ne 0 ]; then
             grep -E "^e: |error:|FAILED|What went wrong" -A3 build.log | head -40 | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"}{print}' | sed 's/^/::error title=Compilación::/'
@@ -70,6 +70,7 @@ jobs:
             bash .github/scripts/wait-for-android.sh salida/emulator-readiness.txt
             bash .github/scripts/install-apk-with-retry.sh app/build/outputs/apk/debug/app-debug.apk salida/app-install.txt
             bash .github/scripts/install-apk-with-retry.sh app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk salida/test-install.txt
+            bash .github/scripts/ads-stability.sh salida
             bash .github/scripts/run-instrumented-suites.sh salida "Android 14 con publicidad de prueba" || true
             bash .github/scripts/ads-impact.sh salida
       - name: Publicar capturas de la publicidad

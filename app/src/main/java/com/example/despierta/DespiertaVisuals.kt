@@ -431,7 +431,8 @@ internal fun NightScene(
                     close()
                 }
                 val back = listOf(0f to 0.50f, 0.12f to 0.36f, 0.24f to 0.47f, 0.38f to 0.24f, 0.52f to 0.44f, 0.66f to 0.30f, 0.80f to 0.46f, 0.92f to 0.34f, 1f to 0.42f)
-                drawPath(peaks(back), color = far.copy(alpha = 0.9f))
+                // Más oscuras que el cielo: si no, la nieve de las cumbres parecía flotar.
+                drawPath(peaks(back), color = lerp(far, palette.hill, 0.45f))
                 val snow = Color.White.copy(alpha = 0.55f)
                 listOf(0.12f to 0.36f, 0.38f to 0.24f, 0.66f to 0.30f, 0.92f to 0.34f).forEach { (px, py) ->
                     val cx = w * px

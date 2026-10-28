@@ -12,8 +12,8 @@ apk_tests="${4:?APK de pruebas}"
 only_config="${5:-}"
 mkdir -p "$out"
 
-pkg="com.example.despierta"
-runner="com.example.despierta.test/androidx.test.runner.AndroidJUnitRunner"
+pkg="com.bluelabstudios.despierta"
+runner="com.bluelabstudios.despierta.test/androidx.test.runner.AndroidJUnitRunner"
 
 demo() { adb shell am broadcast -a com.android.systemui.demo -e command "$@" >/dev/null 2>&1 || true; }
 

@@ -149,8 +149,8 @@ jobs:
             bash .github/scripts/wait-for-android.sh app/build/outputs/androidTest-results/diagnostics/emulator-readiness.txt
             bash .github/scripts/install-apk-with-retry.sh app/build/outputs/apk/debug/app-debug.apk app/build/outputs/androidTest-results/diagnostics/app-install.txt
             bash .github/scripts/install-apk-with-retry.sh app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk app/build/outputs/androidTest-results/diagnostics/test-install.txt
-            adb shell cmd package compile -m speed -f com.example.despierta
-            adb shell cmd package compile -m speed -f com.example.despierta.test
+            adb shell cmd package compile -m speed -f com.bluelabstudios.despierta
+            adb shell cmd package compile -m speed -f com.bluelabstudios.despierta.test
             bash .github/scripts/run-instrumented-suites.sh app/build/outputs/androidTest-results/diagnostics "${{ matrix.display-name }}"
 
       - name: Publicar informes instrumentados

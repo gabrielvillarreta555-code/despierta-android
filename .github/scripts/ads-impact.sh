@@ -4,8 +4,8 @@
 set -uo pipefail
 out="${1:?Directorio de salida}"
 mkdir -p "$out/anuncios"
-pkg="com.example.despierta"
-runner="com.example.despierta.test/androidx.test.runner.AndroidJUnitRunner"
+pkg="com.bluelabstudios.despierta"
+runner="com.bluelabstudios.despierta.test/androidx.test.runner.AndroidJUnitRunner"
 adb logcat -c || true
 timeout 600 adb shell am instrument -w -r -e class com.example.despierta.AdsImpactCheck "$runner" > "$out/ads-instrumentation.txt" 2>&1
 adb logcat -d -v brief -s DespiertaAnuncios:V > "$out/ads-log.txt" 2>&1 || true

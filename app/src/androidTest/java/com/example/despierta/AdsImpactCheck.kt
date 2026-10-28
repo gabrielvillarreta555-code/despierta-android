@@ -153,8 +153,9 @@ class AdsImpactCheck {
     }
 
     private fun pssKb(): Int {
-        val out = shell("dumpsys meminfo com.example.despierta")
-        val line = out.lines().firstOrNull { it.trim().startsWith("TOTAL PSS:") || it.trim().startsWith("TOTAL:") }
+        val out = shell("dumpsys meminfo ${context.packageName}")
+        // Formatos: "TOTAL PSS:  54321 ..." (Android 14) o "TOTAL  54321 ..." (anteriores).
+        val line = out.lines().firstOrNull { Regex("^\\s*TOTAL( PSS)?:?\\s+\\d+").containsMatchIn(it) }
         return line?.let { Regex("(\\d+)").find(it)?.value?.toIntOrNull() } ?: -1
     }
 
