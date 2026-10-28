@@ -1,5 +1,6 @@
 package com.example.despierta
 
+import com.google.android.ump.ConsentInformation
 import android.app.Activity
 import android.content.Context
 import android.os.Handler
@@ -44,6 +45,9 @@ import java.util.concurrent.atomic.AtomicBoolean
  * ReminderReceiver ni AlarmActivity. Con identificadores de prueba de Google mientras
  * BuildConfig.ADS_TEST_IDS sea verdadero.
  */
+/** Política de privacidad publicada (GitHub Pages). */
+internal const val PRIVACY_POLICY_URL = "https://gabrielvillarreta555-code.github.io/despierta/privacidad/"
+
 internal object AdsManager {
     private const val TAG = "DespiertaAnuncios"
     private val started = AtomicBoolean(false)
@@ -52,6 +56,10 @@ internal object AdsManager {
 
     /** Verdadero cuando el SDK está iniciado y hay consentimiento (o no hace falta). */
     var canShowAds by mutableStateOf(false)
+        private set
+
+    /** Verdadero si la región exige ofrecer "Opciones de privacidad" (UMP). */
+    var privacyOptionsRequired by mutableStateOf(false)
         private set
 
     /** Eventos para diagnóstico y pruebas (sin datos personales). */
@@ -75,6 +83,8 @@ internal object AdsManager {
             ConsentRequestParameters.Builder().build(),
             {
                 record("consent_updated status=${consent.consentStatus}")
+                privacyOptionsRequired = consent.privacyOptionsRequirementStatus ==
+                    ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
                 UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { formError ->
                     if (formError != null) record("consent_form_error code=${formError.errorCode}")
                     if (consent.canRequestAds()) initialize(activity.applicationContext)
@@ -91,6 +101,13 @@ internal object AdsManager {
         )
         // Si en una sesión anterior ya había consentimiento, no hace falta esperar.
         if (consent.canRequestAds()) initialize(activity.applicationContext)
+    }
+
+    /** Abre el formulario de Google para cambiar el consentimiento de anuncios. */
+    fun showPrivacyOptions(activity: Activity) {
+        UserMessagingPlatform.showPrivacyOptionsForm(activity) { error ->
+            if (error != null) record("privacy_options_error code=${error.errorCode}")
+        }
     }
 
     private fun initialize(context: Context) {

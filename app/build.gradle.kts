@@ -35,7 +35,23 @@ android {
         buildConfigField("boolean", "ADS_TEST_IDS", (project.findProperty("admobBannerId") == null).toString())
         buildConfigField("String", "ADMOB_BANNER_ID", "\"$admobBannerId\"")
     }
+    // Clave de SUBIDA de Google Play: solo se usa si el CI la recibe de los secretos de GitHub
+    // (DESPIERTA_UPLOAD_*). El repositorio es público: aquí no hay claves ni contraseñas.
+    val uploadKeystore = System.getenv("DESPIERTA_UPLOAD_KEYSTORE")
+    signingConfigs {
+        if (uploadKeystore != null && file(uploadKeystore).exists()) {
+            create("upload") {
+                storeFile = file(uploadKeystore)
+                storePassword = System.getenv("DESPIERTA_UPLOAD_STORE_PASSWORD")
+                keyAlias = System.getenv("DESPIERTA_UPLOAD_KEY_ALIAS")
+                keyPassword = System.getenv("DESPIERTA_UPLOAD_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
+        getByName("release") {
+            signingConfigs.findByName("upload")?.let { signingConfig = it }
+        }
         // Versión optimizada para instalar y probar: R8 activado, sin depuración y firmada con la
         // clave de depuración, así se instala encima del APK de depuración conservando los datos.
         // No es la versión de Google Play (esa se firma con la clave de carga).

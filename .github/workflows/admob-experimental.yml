@@ -24,8 +24,24 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
+      - name: Clave de subida (secretos de GitHub, si existen)
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.DESPIERTA_UPLOAD_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            echo "DESPIERTA_UPLOAD_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+            echo "::notice title=AAB::Se firmará con la clave de subida de los secretos."
+          else
+            echo "::warning title=AAB::Sin clave de subida en los secretos: el AAB sale SIN firmar y Google Play no lo aceptará."
+          fi
       - name: Pruebas unitarias, análisis y APK
         shell: bash
+        env:
+          DESPIERTA_UPLOAD_STORE_PASSWORD: ${{ secrets.DESPIERTA_UPLOAD_STORE_PASSWORD }}
+          DESPIERTA_UPLOAD_KEY_ALIAS: ${{ secrets.DESPIERTA_UPLOAD_KEY_ALIAS }}
+          DESPIERTA_UPLOAD_KEY_PASSWORD: ${{ secrets.DESPIERTA_UPLOAD_KEY_PASSWORD }}
         run: |
           set +e
           ./gradlew testDebugUnitTest lintDebug assembleDebug assembleRelease bundleRelease --stacktrace > build.log 2>&1
@@ -34,6 +50,15 @@ jobs:
             grep -E "^e: |error:|FAILED|What went wrong" -A3 build.log | head -40 | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"}{print}' | sed 's/^/::error title=Compilación::/'
             exit $status
           fi
+      - name: Publicar AAB y APK de prueba
+        uses: actions/upload-artifact@v4
+        with:
+          name: Despierta-2.8-play
+          path: |
+            app/build/outputs/bundle/release/*.aab
+            app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: warn
+          retention-days: 30
       - name: Auditoría del APK con publicidad
         shell: bash
         run: |

@@ -1,5 +1,11 @@
 package com.example.despierta
 
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.Policy
+import androidx.compose.ui.platform.LocalContext
+import android.net.Uri
+import android.content.Intent
+import android.app.Activity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -889,7 +895,37 @@ private fun AboutSettings() {
             }
         }
     }
+    // 2.8: texto exacto con publicidad, enlace a la política y opciones de privacidad de anuncios.
+    val context = LocalContext.current
     SettingsGroup("PRIVACIDAD") {
-        InfoRow(Icons.Rounded.Lock, "Tus datos se quedan aquí", "Alarmas y ajustes se guardan solo en este teléfono.")
+        InfoRow(
+            Icons.Rounded.Lock,
+            "Tus alarmas se quedan en el teléfono",
+            "Despierta no envía tus alarmas ni ajustes. El anuncio de Google usa datos técnicos del dispositivo."
+        )
+        RowDivider()
+        ActionRow(
+            icon = Icons.Rounded.Policy,
+            title = "Política de privacidad",
+            subtitle = "Qué datos se usan y por qué",
+            onClick = {
+                runCatching {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                }
+            },
+            modifier = Modifier.testTag("privacy_policy")
+        )
+        if (AdsManager.privacyOptionsRequired) {
+            RowDivider()
+            ActionRow(
+                icon = Icons.Rounded.Tune,
+                title = "Opciones de privacidad de anuncios",
+                subtitle = "Cambia tu consentimiento para los anuncios",
+                onClick = { (context as? Activity)?.let(AdsManager::showPrivacyOptions) },
+                modifier = Modifier.testTag("ads_privacy_options")
+            )
+        }
     }
 }
