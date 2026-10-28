@@ -282,17 +282,23 @@ private fun AppearanceSettings(choice: ThemeChoice, onChanged: (ThemeChoice) -> 
     var confirmReset by rememberSaveable { mutableStateOf(false) }
 
     SettingsGroup("FONDO") {
-        Row(
+        // 2.9: cinco fondos, en filas de tres para que cada vista previa conserve su tamaño.
+        Column(
             Modifier.fillMaxWidth().padding(14.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            DespiertaPresets.forEach { preset ->
-                PresetTile(
-                    preset = preset,
-                    selected = preset.id == choice.presetId,
-                    modifier = Modifier.weight(1f),
-                    onClick = { onChanged(choice.copy(presetId = preset.id)) }
-                )
+            DespiertaPresets.chunked(3).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    row.forEach { preset ->
+                        PresetTile(
+                            preset = preset,
+                            selected = preset.id == choice.presetId,
+                            modifier = Modifier.weight(1f),
+                            onClick = { onChanged(choice.copy(presetId = preset.id)) }
+                        )
+                    }
+                    repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+                }
             }
         }
     }

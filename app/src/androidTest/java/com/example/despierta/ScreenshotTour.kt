@@ -62,6 +62,9 @@ class ScreenshotTour {
             // Alarmas en los otros temas, al principio: son las capturas clave de la 2.6.
             runCatching { withApp(ThemeChoice("amanecer", null)) { capture("13-tema-amanecer") } }
             runCatching { withApp(ThemeChoice("bosque", null)) { capture("14-tema-bosque") } }
+            // 2.9: fondos negro y grafito.
+            runCatching { withApp(ThemeChoice("negro", null)) { capture("21-tema-negro") } }
+            runCatching { withApp(ThemeChoice("grafito", null)) { capture("22-tema-grafito") } }
             // 2.7: paisajes, letra e iconos nuevos.
             runCatching { withApp(ThemeChoice.DEFAULT.copy(scene = SceneStyle.MONTANA)) { capture("16-paisaje-montana") } }
             runCatching { withApp(ThemeChoice.DEFAULT.copy(scene = SceneStyle.ESTRELLAS)) { capture("17-paisaje-estrellas") } }

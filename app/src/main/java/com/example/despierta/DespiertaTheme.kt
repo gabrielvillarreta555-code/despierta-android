@@ -115,6 +115,28 @@ internal val DespiertaPresets: List<DespiertaPalette> = listOf(
         active = listOf(Color(0xFF24504B), Color(0xFF183A36)),
         hill = Color(0xFF071512),
         accent = Color(0xFF8EE3BF)
+    ),
+    // 2.9: negro casi puro (ahorra batería en pantallas OLED) con acento plata.
+    DespiertaPalette(
+        id = "negro",
+        name = "Negro",
+        sky = listOf(Color(0xFF1A1A1F), Color(0xFF0E0E12), Color(0xFF07070A), Color(0xFF000000)),
+        hero = listOf(Color(0xFF3A3A44), Color(0xFF202027), Color(0xFF101014)),
+        card = listOf(Color(0xFF1C1C21), Color(0xFF121215)),
+        active = listOf(Color(0xFF2A2A31), Color(0xFF18181C)),
+        hill = Color(0xFF050506),
+        accent = Color(0xFFE4E6EE)
+    ),
+    // 2.9: gris grafito con acento gris azulado.
+    DespiertaPalette(
+        id = "grafito",
+        name = "Grafito",
+        sky = listOf(Color(0xFF4A4F57), Color(0xFF2E3238), Color(0xFF22252A), Color(0xFF17191C)),
+        hero = listOf(Color(0xFF6B717B), Color(0xFF454A52), Color(0xFF2A2D32)),
+        card = listOf(Color(0xFF3A3E45), Color(0xFF2C2F35)),
+        active = listOf(Color(0xFF474C54), Color(0xFF33373D)),
+        hill = Color(0xFF121417),
+        accent = Color(0xFFB8C6DA)
     )
 )
 
@@ -128,7 +150,8 @@ internal val DespiertaAccents: List<Pair<String, Color>> = listOf(
     "Rosa" to Color(0xFFF48FB1),
     "Naranja" to Color(0xFFFFB74D),
     "Menta" to Color(0xFF8EE3BF),
-    "Blanco" to Color(0xFFF2F0F7)
+    "Blanco" to Color(0xFFF2F0F7),
+    "Plata" to Color(0xFFB8C6DA)
 )
 
 internal enum class IconStyle(val label: String) {

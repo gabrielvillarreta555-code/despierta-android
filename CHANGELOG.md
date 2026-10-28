@@ -6,6 +6,23 @@ Cada versión tiene un `versionName` y un `versionCode` único y creciente en
 (`Despierta-<versión>`). Cada versión estable queda guardada en una rama
 `estable/<versión>` (por ejemplo `estable/2.5`) para poder volver a ella.
 
+## 2.9 — versionCode 12 — Fondos Negro y Grafito
+
+- Dos fondos nuevos en Ajustes → Apariencia → Fondo: **Negro** (casi negro puro,
+  acento plata; en pantallas OLED gasta menos batería) y **Grafito** (gris oscuro,
+  acento gris azulado). Funcionan con los tres paisajes.
+- Nuevo color de acento **Plata**.
+- La sección Fondo muestra los cinco fondos en dos filas para que cada vista
+  previa conserve su tamaño.
+- Mismo contraste mínimo que los demás fondos (prueba `selectableColorsKeepTextReadable`).
+- Sin cambios en el motor de alarmas.
+
+## 2.8 — versionCode 11 — Preparación para Google Play
+
+- Identificador `com.bluelabstudios.despierta`, firma de subida, banner discreto
+  con identificadores de prueba de AdMob, consentimiento (UMP) y enlace a la
+  política de privacidad.
+
 ## 2.7 — versionCode 10 — Personalización: paisaje, letra, iconos y fluidez
 
 Incluye la 2.6 (diseño verde) y sus correcciones. Sin cambios en el motor de alarmas.

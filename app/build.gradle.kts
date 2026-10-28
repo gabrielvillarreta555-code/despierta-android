@@ -21,8 +21,8 @@ android {
         applicationId = "com.bluelabstudios.despierta"
         minSdk = 26
         targetSdk = 36
-        versionCode = 11
-        versionName = "2.8"
+        versionCode = 12
+        versionName = "2.9"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GIT_COMMIT", "\"${buildCommit.take(12)}\"")
         // Publicidad experimental (rama experimental/admob). Solo identificadores de PRUEBA
