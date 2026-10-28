@@ -34,7 +34,8 @@ jobs:
           "$aapt2" dump permissions "$apk" | note "Permisos del APK"
           "$aapt2" dump xmltree --file AndroidManifest.xml "$apk" | grep -iE "allowBackup|fullBackupContent|dataExtractionRules|usesCleartextTraffic|networkSecurityConfig|android:name\(.*\)=\"[a-z.]*(provider|receiver|service)|E: (provider|receiver|service|activity)" | head -60 | note "Manifiesto combinado (componentes y copias)"
           "$aapt2" dump xmltree --file AndroidManifest.xml "$apk" | grep -E "E: (provider|service|receiver|activity|uses-permission)" -A2 | grep -E "E: |A: android:name" | head -80 | note "Componentes declarados"
-          grep -E "^[+\\\\| ]+--- " deps.txt | sed -E 's/^[+\\| -]+//' | sort -u | head -120 | note "Dependencias de ejecución (release)"
+          grep -E -- "--- " deps.txt | sed -E 's/.*--- //; s/ .*//' | cut -d: -f1,2 | sort -u | note "Dependencias (grupo:artefacto)"
+          grep -E -- "--- " deps.txt | sed -E 's/.*--- //; s/ .*//' | cut -d: -f1 | sort | uniq -c | note "Grupos de dependencias"
           mkdir -p dex && unzip -q -o "$apk" 'classes*.dex' -d dex
           for f in dex/classes*.dex; do strings -n 6 "$f"; done | grep -oE "^L[a-z0-9_]+/[a-z0-9_]+/" | sort | uniq -c | sort -rn | head -40 | note "Paquetes de código en el APK"
           for f in dex/classes*.dex; do strings -n 6 "$f"; done | grep -ciE "https?://" | note "Cadenas con http(s) en el código"
