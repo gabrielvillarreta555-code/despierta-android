@@ -63,6 +63,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -73,6 +74,9 @@ import java.time.format.DateTimeFormatter
 
 // Pantalla de Alarmas (2.6): paisaje integrado en la cabecera, reloj superpuesto, próxima
 // alarma compacta, descanso estimado y lista agrupada de alarmas.
+
+/** Cifras de ancho fijo: la hora no "baila" al cambiar los dígitos. */
+private val TabularFigures = TextStyle(fontFeatureSettings = "tnum")
 
 /** Altura del paisaje y punto donde el reloj se superpone a él. */
 private val SceneHeight = 300.dp
@@ -322,7 +326,7 @@ private fun ClockCard(nowMillis: Long, animated: Boolean) {
                 lineHeight = 72.sp,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = (-1.5).sp,
-                fontFeatureSettings = "tnum",
+                style = TabularFigures,
                 color = palette.textPrimary
             )
             Column(Modifier.padding(start = 10.dp)) {
@@ -330,7 +334,7 @@ private fun ClockCard(nowMillis: Long, animated: Boolean) {
                 Text(
                     now.format(DateTimeFormatter.ofPattern(":ss")),
                     fontSize = 15.sp,
-                    fontFeatureSettings = "tnum",
+                    style = TabularFigures,
                     color = palette.textSoft
                 )
             }
@@ -479,7 +483,7 @@ private fun AlarmRow(
                     fontSize = 34.sp,
                     lineHeight = 36.sp,
                     fontWeight = FontWeight.Medium,
-                    fontFeatureSettings = "tnum",
+                    style = TabularFigures,
                     color = palette.textPrimary
                 )
                 Text(
