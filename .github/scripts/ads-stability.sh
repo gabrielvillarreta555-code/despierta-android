@@ -9,7 +9,9 @@ body() { sed 's/%/%25/g; s/\r//g' | awk 'BEGIN{ORS="%0A"}{print}'; }
 summary=""
 for scenario in soloAlarma pantallaCerrada pantallaAbierta; do
   adb logcat -c || true
-  timeout 240 adb shell am instrument -w -r -e class "com.example.despierta.AdsStabilityCheck#$scenario" "$runner" > "$out/estabilidad-$scenario.txt" 2>&1
+  # Sin --foreground, timeout deja adb en segundo plano: al leer la terminal se detiene y no escribe nada.
+  timeout --foreground 300 adb shell am instrument -w -r -e class "com.example.despierta.AdsStabilityCheck#$scenario" "$runner" < /dev/null > "$out/estabilidad-$scenario.txt" 2>&1
+  echo "codigo_salida=$? bytes=$(wc -c < "$out/estabilidad-$scenario.txt") dispositivos=$(adb devices | tr -d "\r\n\t")" >> "$out/estabilidad-$scenario.txt"
   adb logcat -d -v brief > "$out/estabilidad-$scenario-logcat.txt" 2>&1 || true
   if grep -q "OK (1 test)" "$out/estabilidad-$scenario.txt"; then
     result="SOBREVIVE"
