@@ -17,7 +17,11 @@ permissions:
 jobs:
   validar:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      matrix:
+        pantalla: [ pixel6, telefono ]
     steps:
       - name: Descargar proyecto
         uses: actions/checkout@v4
@@ -59,8 +63,8 @@ jobs:
           script: |
             mkdir -p validacion
             bash .github/scripts/wait-for-android.sh validacion/emulator-readiness.txt
-            bash .github/scripts/visual-validation.sh validacion "$RUNNER_TEMP/antes.apk" "$RUNNER_TEMP/despues.apk" "$RUNNER_TEMP/pruebas.apk"
+            bash .github/scripts/visual-validation.sh validacion "$RUNNER_TEMP/antes.apk" "$RUNNER_TEMP/despues.apk" "$RUNNER_TEMP/pruebas.apk" ${{ matrix.pantalla }}
 
       - name: Publicar en la rama validacion-capturas
         if: always()
-        run: bash .github/scripts/publish-validation.sh validacion "${{ github.sha }}" "$BASE_SHA"
+        run: bash .github/scripts/publish-validation.sh validacion "${{ github.sha }}" "$BASE_SHA" ${{ matrix.pantalla }}

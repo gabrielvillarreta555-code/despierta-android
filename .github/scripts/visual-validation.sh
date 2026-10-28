@@ -9,6 +9,7 @@ out="${1:?Directorio de salida}"
 apk_before="${2:?APK base}"
 apk_after="${3:?APK candidata}"
 apk_tests="${4:?APK de pruebas}"
+only_config="${5:-}"
 mkdir -p "$out"
 
 pkg="com.example.despierta"
@@ -51,6 +52,7 @@ run_with() {
 }
 
 for config in pixel6 telefono; do
+  [[ -n "$only_config" && "$config" != "$only_config" ]] && continue
   if [[ "$config" == "telefono" ]]; then
     adb shell wm size 1080x2392
     adb shell wm density 440

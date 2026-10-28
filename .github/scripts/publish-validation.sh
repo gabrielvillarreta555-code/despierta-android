@@ -6,8 +6,9 @@ set -euo pipefail
 dir="${1:?Directorio con las capturas}"
 source_sha="${2:?Commit candidato}"
 base_sha="${3:?Commit base}"
-branch="validacion-capturas"
-pub="$RUNNER_TEMP/validacion-branch"
+config="${4:-todas}"
+branch="validacion-capturas-$config"
+pub="$RUNNER_TEMP/validacion-branch-$config"
 
 git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
