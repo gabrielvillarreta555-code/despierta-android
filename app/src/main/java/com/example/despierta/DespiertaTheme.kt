@@ -52,13 +52,15 @@ internal data class DespiertaPalette(
     val accent: Color,
     val navIconColor: Color? = null,
     val cardIconColor: Color? = null,
-    val buttonColor: Color? = null
+    val buttonColor: Color? = null,
+    /** 2.9: fondos sin tinte (Negro, Grafito): textos y bordes grises en vez de lavanda. */
+    val neutral: Boolean = false
 ) {
     val accentSoft: Color get() = lerp(accent, Color.White, 0.45f)
     val onAccent: Color get() = contrastOn(accent)
-    val textPrimary: Color get() = Color(0xFFF6F2FF)
-    val textSoft: Color get() = Color(0xFFC3BBDD)
-    val outline: Color get() = Color(0xFF4B3F78)
+    val textPrimary: Color get() = if (neutral) Color(0xFFF4F5F7) else Color(0xFFF6F2FF)
+    val textSoft: Color get() = if (neutral) Color(0xFFBFC3CA) else Color(0xFFC3BBDD)
+    val outline: Color get() = if (neutral) Color(0xFF4A4E56) else Color(0xFF4B3F78)
     /** Iconos de la barra inferior sin seleccionar. */
     val navIcon: Color get() = navIconColor ?: textSoft
     /** Pestaña seleccionada: el color elegido o el acento. */
@@ -125,7 +127,8 @@ internal val DespiertaPresets: List<DespiertaPalette> = listOf(
         card = listOf(Color(0xFF1C1C21), Color(0xFF121215)),
         active = listOf(Color(0xFF2A2A31), Color(0xFF18181C)),
         hill = Color(0xFF050506),
-        accent = Color(0xFFE4E6EE)
+        accent = Color(0xFFE4E6EE),
+        neutral = true
     ),
     // 2.9: gris grafito con acento gris azulado.
     DespiertaPalette(
@@ -136,7 +139,8 @@ internal val DespiertaPresets: List<DespiertaPalette> = listOf(
         card = listOf(Color(0xFF3A3E45), Color(0xFF2C2F35)),
         active = listOf(Color(0xFF474C54), Color(0xFF33373D)),
         hill = Color(0xFF121417),
-        accent = Color(0xFFB8C6DA)
+        accent = Color(0xFFB8C6DA),
+        neutral = true
     )
 )
 

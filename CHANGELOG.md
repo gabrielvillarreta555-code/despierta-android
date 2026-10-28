@@ -12,6 +12,8 @@ Cada versión tiene un `versionName` y un `versionCode` único y creciente en
   acento plata; en pantallas OLED gasta menos batería) y **Grafito** (gris oscuro,
   acento gris azulado). Funcionan con los tres paisajes.
 - Nuevo color de acento **Plata**.
+- En Negro y Grafito los textos secundarios y bordes son grises neutros (antes
+  quedaban con tinte lavanda heredado del tema Noche).
 - La sección Fondo muestra los cinco fondos en dos filas para que cada vista
   previa conserve su tamaño.
 - Mismo contraste mínimo que los demás fondos (prueba `selectableColorsKeepTextReadable`).
