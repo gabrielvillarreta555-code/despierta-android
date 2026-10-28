@@ -9,6 +9,8 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,7 +25,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarResult
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
@@ -32,7 +38,43 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AlarmService.ensureNotificationChannel(this)
+        applyRefreshRate(loadThemeChoice(getSharedPreferences(DESPIERTA_UI_PREFS, MODE_PRIVATE)).refresh)
+        // Dibuja detrás de las barras del sistema (sin franja negra arriba) con iconos claros.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+        )
         setContent { AlarmApp(resumeGeneration) }
+    }
+
+    /**
+     * Frecuencia de pantalla elegida en Accesibilidad (2.7): la más alta a la resolución actual
+     * (Android la baja por su cuenta cuando no hay movimiento), la más cercana a 60 Hz, o
+     * ninguna petición para que decida Android.
+     */
+    internal fun applyRefreshRate(choice: RefreshChoice) {
+        runCatching {
+            val currentDisplay = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                display
+            } else {
+                @Suppress("DEPRECATION")
+                windowManager.defaultDisplay
+            } ?: return
+            val current = currentDisplay.mode
+            val best = currentDisplay.supportedModes
+                .filter {
+                    it.physicalWidth == current.physicalWidth && it.physicalHeight == current.physicalHeight
+                }
+                .let { modes ->
+                    when (choice) {
+                        RefreshChoice.MAXIMA -> modes.maxByOrNull { it.refreshRate }
+                        RefreshChoice.AHORRO -> modes.minByOrNull { kotlin.math.abs(it.refreshRate - 60f) }
+                        RefreshChoice.SISTEMA -> null
+                    }
+                }
+            window.attributes = window.attributes.also { it.preferredDisplayModeId = best?.modeId ?: 0 }
+            AlarmLog.info("refresh_rate", "choice=${choice.name} hz=${best?.refreshRate} actual=${current.refreshRate}")
+        }.onFailure { AlarmLog.error("refresh_rate_failed", "", it) }
     }
 
     override fun onResume() {
@@ -56,6 +98,20 @@ class MainActivity : ComponentActivity() {
         var hapticsEnabled by rememberSaveable {
             mutableStateOf(uiPreferences.getBoolean("haptics_enabled", true))
         }
+        // Horario de sueño y avisos opcionales: preferencias de interfaz. No programan alarmas.
+        var sleepSchedule by remember { mutableStateOf(loadSleepSchedule(uiPreferences)) }
+        var notificationPrefs by remember { mutableStateOf(loadNotificationPrefs(uiPreferences)) }
+        var defaultSnooze by remember { mutableIntStateOf(loadDefaultSnooze(uiPreferences)) }
+        val canPostNotifications = remember(resumeSignal) {
+            ReminderScheduler.canPostNotifications(this@MainActivity)
+        }
+
+        // Apariencia: fondo y acento. Solo cambia colores, nunca la programación de alarmas.
+        var themeChoice by remember {
+            mutableStateOf(loadThemeChoice(uiPreferences))
+        }
+        // 2.7: la fluidez elegida se aplica al momento.
+        LaunchedEffect(themeChoice.refresh) { applyRefreshRate(themeChoice.refresh) }
 
         val notificationPermission = rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission()
@@ -65,6 +121,14 @@ class MainActivity : ComponentActivity() {
 
         LaunchedEffect(resumeSignal) {
             alarms = store.getAll()
+        }
+        // Los avisos opcionales se recalculan cuando cambian las alarmas o sus ajustes.
+        // ReminderScheduler solo lee las alarmas; nunca las programa ni las cancela.
+        LaunchedEffect(alarms, sleepSchedule, notificationPrefs) {
+            withContext(Dispatchers.IO) {
+                runCatching { ReminderScheduler.refresh(applicationContext) }
+                    .onFailure { AlarmLog.error("reminder_refresh_failed", "", it) }
+            }
         }
         LaunchedEffect(Unit) {
             if (
@@ -111,7 +175,9 @@ class MainActivity : ComponentActivity() {
             needsAlarmChannel = AlarmService.isNotificationChannelDegraded(this)
         )
 
-        DespiertaTheme {
+        fun newAlarm(): AlarmModel = store.newAlarm().copy(snoozeMinutes = defaultSnooze)
+
+        DespiertaTheme(palette = themeChoice.toPalette(), choice = themeChoice) {
             DespiertaApp(
                 alarms = alarms,
                 section = section,
@@ -121,6 +187,12 @@ class MainActivity : ComponentActivity() {
                     BuildConfig.DEBUG &&
                         intent.getBooleanExtra(EXTRA_DISABLE_LIVE_CLOCK_FOR_TESTS, false)
                     ),
+                // Solo en compilaciones de depuración: hora fija para capturas reproducibles.
+                fixedNowMillis = if (BuildConfig.DEBUG) {
+                    intent.getLongExtra(EXTRA_FIXED_NOW_MILLIS_FOR_TESTS, -1L).takeIf { it > 0L }
+                } else {
+                    null
+                },
                 snackbarHostState = snackbar,
                 onSectionSelected = {
                     feedback()
@@ -128,11 +200,11 @@ class MainActivity : ComponentActivity() {
                 },
                 onAddAlarm = {
                     feedback()
-                    draft = store.newAlarm()
+                    draft = newAlarm()
                 },
                 onAddShiftAlarm = {
                     feedback()
-                    draft = store.newAlarm().copy(
+                    draft = newAlarm().copy(
                         label = "Mi turno",
                         shiftPattern = ShiftPattern.from(LocalDate.now(), 12, 4)
                     )
@@ -156,6 +228,19 @@ class MainActivity : ComponentActivity() {
                     scheduler.cancel(alarm.id)
                     store.delete(alarm.id)
                     alarms = store.getAll()
+                    // Deshacer: vuelve a guardar y programar con el mismo camino que el editor.
+                    scope.launch {
+                        val result = snackbar.showSnackbar(
+                            message = "Alarma «${alarm.label}» eliminada",
+                            actionLabel = "Deshacer",
+                            duration = SnackbarDuration.Short
+                        )
+                        if (result == SnackbarResult.ActionPerformed && store.find(alarm.id) == null) {
+                            store.save(alarm)
+                            scheduleAndReport(alarm)
+                            alarms = store.getAll()
+                        }
+                    }
                 },
                 onHapticsChanged = { enabled ->
                     hapticsEnabled = enabled
@@ -191,6 +276,42 @@ class MainActivity : ComponentActivity() {
                         ACTION_MANAGE_FULL_SCREEN_INTENT,
                         Uri.parse("package:$packageName")
                     )
+                },
+                themeChoice = themeChoice,
+                onThemeChanged = { choice ->
+                    themeChoice = choice
+                    saveThemeChoice(uiPreferences, choice)
+                },
+                sleepSchedule = sleepSchedule,
+                onSleepScheduleChanged = { updated ->
+                    sleepSchedule = updated
+                    saveSleepSchedule(uiPreferences, updated)
+                },
+                notificationPrefs = notificationPrefs,
+                onNotificationPrefsChanged = { updated ->
+                    feedback()
+                    notificationPrefs = updated
+                    saveNotificationPrefs(uiPreferences, updated)
+                    if (
+                        updated.enabled &&
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                        checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+                        PackageManager.PERMISSION_GRANTED
+                    ) {
+                        notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                },
+                canPostNotifications = canPostNotifications,
+                defaultSnoozeMinutes = defaultSnooze,
+                onDefaultSnoozeChanged = { minutes ->
+                    feedback()
+                    defaultSnooze = minutes
+                    saveDefaultSnooze(uiPreferences, minutes)
+                },
+                onCreateWakeAlarm = { hour, minute ->
+                    feedback()
+                    // Abre el editor existente: es el editor quien guarda y programa la alarma.
+                    draft = newAlarm().copy(hour = hour, minute = minute, label = "Despertar")
                 },
                 onRequestAlarmChannel = {
                     runCatching {
@@ -230,6 +351,8 @@ class MainActivity : ComponentActivity() {
     companion object {
         internal const val EXTRA_DISABLE_LIVE_CLOCK_FOR_TESTS =
             "com.example.despierta.extra.DISABLE_LIVE_CLOCK_FOR_TESTS"
+        internal const val EXTRA_FIXED_NOW_MILLIS_FOR_TESTS =
+            "com.example.despierta.extra.FIXED_NOW_MILLIS_FOR_TESTS"
         // Inlined strings keep the guarded settings actions safe on the minSdk 26 code path.
         private const val ACTION_REQUEST_EXACT_ALARM =
             "android.settings.REQUEST_SCHEDULE_EXACT_ALARM"

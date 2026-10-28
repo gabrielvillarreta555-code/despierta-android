@@ -27,8 +27,8 @@ class AlarmScreenInstrumentedTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val store = AlarmStore(context)
         val alarm = store.newAlarm().copy(
-            hour = 6,
-            minute = 45,
+            hour = 12,
+            minute = 0,
             label = "Contraste verificado",
             snoozeMinutes = 10,
             vibrate = false,
@@ -44,16 +44,29 @@ class AlarmScreenInstrumentedTest {
                 composeRule.waitForIdle()
                 composeRule.onNodeWithTag("ringing_time")
                     .assertIsDisplayed()
-                    .assertTextEquals("06:45")
+                    .assertTextEquals("12:00")
+                composeRule.onNodeWithTag("ringing_period").assertTextEquals("PM")
                 composeRule.onNodeWithTag("ringing_snooze").assertIsDisplayed()
                 composeRule.onNodeWithTag("ringing_stop").assertIsDisplayed()
 
-                val screenshot = InstrumentationRegistry.getInstrumentation()
-                    .uiAutomation
-                    .takeScreenshot()
+                // UiAutomation.takeScreenshot() puede devolver null en emuladores lentos mientras
+                // la superficie aún no está lista; se reintenta brevemente sin ocultar el fallo final.
+                var screenshot: Bitmap? = null
+                repeat(SCREENSHOT_ATTEMPTS) {
+                    if (screenshot == null) {
+                        composeRule.waitForIdle()
+                        screenshot = InstrumentationRegistry.getInstrumentation()
+                            .uiAutomation
+                            .takeScreenshot()
+                        if (screenshot == null) Thread.sleep(SCREENSHOT_RETRY_DELAY_MS)
+                    }
+                }
+                val capture = screenshot ?: throw AssertionError(
+                    "UiAutomation no devolvió captura tras $SCREENSHOT_ATTEMPTS intentos"
+                )
                 val output = File(context.filesDir, SCREENSHOT_NAME)
                 output.outputStream().use { stream ->
-                    assertTrue(screenshot.compress(Bitmap.CompressFormat.PNG, 100, stream))
+                    assertTrue(capture.compress(Bitmap.CompressFormat.PNG, 100, stream))
                 }
                 assertTrue(output.isFile && output.length() > 0L)
             }
@@ -63,6 +76,8 @@ class AlarmScreenInstrumentedTest {
     }
 
     companion object {
-        const val SCREENSHOT_NAME = "Despierta-2.5-Alarma-activa.png"
+        const val SCREENSHOT_NAME = "Despierta-Alarma-activa.png"
+        private const val SCREENSHOT_ATTEMPTS = 5
+        private const val SCREENSHOT_RETRY_DELAY_MS = 700L
     }
 }

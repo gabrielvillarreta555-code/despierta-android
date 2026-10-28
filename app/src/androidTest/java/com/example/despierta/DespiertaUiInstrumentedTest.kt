@@ -15,11 +15,13 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.espresso.IdlingPolicies
 import androidx.test.rule.GrantPermissionRule
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.util.concurrent.TimeUnit
 
 class DespiertaUiInstrumentedTest {
     @get:Rule(order = 0)
@@ -34,6 +36,10 @@ class DespiertaUiInstrumentedTest {
 
     @Before
     fun launchWithoutLiveClockTicker() {
+        // Experimento acotado: el emulador de CI tarda más de 12 s en mostrar la actividad.
+        // Un límite de 120 s distingue lentitud (pasará) de un bloqueo permanente (seguirá fallando).
+        IdlingPolicies.setIdlingResourceTimeout(120, TimeUnit.SECONDS)
+        IdlingPolicies.setMasterPolicyTimeout(150, TimeUnit.SECONDS)
         val context = ApplicationProvider.getApplicationContext<Context>()
         val intent = Intent(context, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -62,6 +68,36 @@ class DespiertaUiInstrumentedTest {
     }
 
     @Test
+    fun sleepScreenShowsScheduleGoalAndEditsWithWheels() {
+        composeRule.onNodeWithTag("nav_sleep").assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag("sleep_screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("sleep_bedtime_card").assertIsDisplayed()
+        composeRule.onNodeWithTag("sleep_wake_card").assertIsDisplayed()
+        composeRule.onNodeWithTag("sleep_duration_summary").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("sleep_goal_progress").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("sleep_days").performScrollTo().assertIsDisplayed()
+
+        composeRule.onNodeWithTag("sleep_wake_card").performScrollTo().performClick().assertIsSelected()
+        composeRule.onNodeWithTag("sleep_time_editor").assertIsDisplayed()
+        composeRule.onNodeWithTag("sleep_bedtime_card").performScrollTo().performClick().assertIsSelected()
+        composeRule.onNodeWithTag("sleep_wake_card").assertIsNotSelected()
+    }
+
+    @Test
+    fun settingsAreOrganizedInCategories() {
+        composeRule.onNodeWithTag("nav_settings").performClick()
+        composeRule.onNodeWithTag("settings_screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("settings_appearance").performScrollTo().performClick()
+        composeRule.onNodeWithTag("settings_page_appearance").assertIsDisplayed()
+        composeRule.onNodeWithTag("theme_noche").performScrollTo().performClick().assertIsSelected()
+        composeRule.onNodeWithTag("settings_back").performClick()
+
+        composeRule.onNodeWithTag("settings_notifications").performScrollTo().performClick()
+        composeRule.onNodeWithTag("settings_page_notifications").assertIsDisplayed()
+        composeRule.onNodeWithTag("notify_master").assertIsDisplayed()
+    }
+
+    @Test
     fun alarmEditorShowsWheelPickerAndManualEntry() {
         composeRule.onNodeWithTag("add_alarm").performClick()
 
@@ -74,6 +110,9 @@ class DespiertaUiInstrumentedTest {
     @Test
     fun alarmEditorAllowsSnoozeAndVibrationConfiguration() {
         composeRule.onNodeWithTag("add_alarm").performClick()
+        // Separa dos fases para que un fallo indique si Compose seguía ocupado al abrir el
+        // editor o después de desplazar su contenido.
+        composeRule.onNodeWithTag("time_wheel_hour").assertIsDisplayed()
 
         composeRule.onNodeWithTag("snooze_5").performScrollTo().assertIsSelected()
         composeRule.onNodeWithTag("snooze_15").performClick().assertIsSelected()

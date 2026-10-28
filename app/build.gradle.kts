@@ -21,10 +21,23 @@ android {
         applicationId = "com.example.despierta"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "2.5"
+        versionCode = 10
+        versionName = "2.7"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GIT_COMMIT", "\"${buildCommit.take(12)}\"")
+    }
+    buildTypes {
+        // Versión optimizada para instalar y probar: R8 activado, sin depuración y firmada con la
+        // clave de depuración, así se instala encima del APK de depuración conservando los datos.
+        // No es la versión de Google Play (esa se firma con la clave de carga).
+        create("fluida") {
+            initWith(getByName("release"))
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+        }
     }
     buildFeatures {
         compose = true
@@ -51,6 +64,7 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:rules:1.7.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation(platform("androidx.compose:compose-bom:2024.12.01"))
     debugImplementation("androidx.compose.ui:ui-test-manifest")

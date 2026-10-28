@@ -30,54 +30,95 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Pruebas unitarias y análisis
-        run: ./gradlew testDebugUnitTest lintDebug --stacktrace
+        shell: bash
+        run: |
+          # Diagnóstico: los errores de compilación, lint y tests se publican como anotaciones
+          # para poder leerlos sin descargar el registro completo.
+          log="$RUNNER_TEMP/unit-lint.log"
+          set +e
+          ./gradlew testDebugUnitTest lintDebug --stacktrace > "$log" 2>&1
+          status=$?
+          set -e
+          grep -E '^e: ' "$log" | head -40 | sed 's/^/::error::/' || true
+          grep -E 'What went wrong' -A3 "$log" | head -30 | sed 's/^/::error::/' || true
+          for report in app/build/reports/lint-results-debug.xml; do
+            [ -f "$report" ] && grep -E 'severity="Error"' -A1 "$report" | head -30 | sed 's/^/::error::LINT /' || true
+          done
+          grep -l '<failure' app/build/test-results/testDebugUnitTest/*.xml 2>/dev/null | head -20 | sed 's/^/::error::TEST FALLO /' || true
+          tail -n 120 "$log"
+          exit $status
 
       - name: Compilar APK y AAB
-        run: ./gradlew assembleDebug bundleRelease --stacktrace
+        run: ./gradlew assembleDebug assembleFluida bundleRelease --stacktrace
 
-      - name: Preparar y verificar Despierta 2.5
+      - name: Preparar y verificar la versión
+        id: version
         shell: bash
         run: |
           set -euo pipefail
-          release_dir="app/build/outputs/despierta-2.5"
+          # La versión sale de app/build.gradle.kts: nunca se escribe a mano aquí.
+          version_name="$(sed -n 's/^ *versionName = "\(.*\)".*/\1/p' app/build.gradle.kts | head -n 1)"
+          version_code="$(sed -n 's/^ *versionCode = \([0-9]*\).*/\1/p' app/build.gradle.kts | head -n 1)"
+          [[ -n "$version_name" && -n "$version_code" ]]
+          echo "version=$version_name" >> "$GITHUB_OUTPUT"
+          base="Despierta-$version_name"
+          release_dir="app/build/outputs/despierta-release"
           mkdir -p "$release_dir"
-          cp app/build/outputs/apk/debug/app-debug.apk "$release_dir/Despierta-2.5.apk"
-          cp app/build/outputs/bundle/release/app-release.aab "$release_dir/Despierta-2.5-unsigned.aab"
+          cp app/build/outputs/apk/debug/app-debug.apk "$release_dir/$base.apk"
+          cp app/build/outputs/apk/fluida/app-fluida.apk "$release_dir/$base-fluida.apk"
+          cp app/build/outputs/bundle/release/app-release.aab "$release_dir/$base-unsigned.aab"
           commit_sha="$(git rev-parse HEAD)"
           aapt_path="$ANDROID_HOME/build-tools/36.0.0/aapt"
-          "$aapt_path" dump badging "$release_dir/Despierta-2.5.apk" | tee "$release_dir/manifest-badging.txt"
-          grep -q "versionCode='8' versionName='2.5'" "$release_dir/manifest-badging.txt"
-          unzip -p "$release_dir/Despierta-2.5.apk" 'classes*.dex' > "$RUNNER_TEMP/despierta-classes.dex"
+          for apk in "$base.apk" "$base-fluida.apk"; do
+            "$aapt_path" dump badging "$release_dir/$apk" | tee -a "$release_dir/manifest-badging.txt"
+            "$aapt_path" dump badging "$release_dir/$apk" | grep -q "versionCode='$version_code' versionName='$version_name'"
+          done
+          unzip -p "$release_dir/$base.apk" 'classes*.dex' > "$RUNNER_TEMP/despierta-classes.dex"
           strings "$RUNNER_TEMP/despierta-classes.dex" > "$RUNNER_TEMP/despierta-classes.txt"
           grep -Fq "${commit_sha:0:12}" "$RUNNER_TEMP/despierta-classes.txt"
-          unzip -p "$release_dir/Despierta-2.5-unsigned.aab" 'base/dex/classes*.dex' > "$RUNNER_TEMP/despierta-bundle-classes.dex"
+          unzip -p "$release_dir/$base-unsigned.aab" 'base/dex/classes*.dex' > "$RUNNER_TEMP/despierta-bundle-classes.dex"
           strings "$RUNNER_TEMP/despierta-bundle-classes.dex" > "$RUNNER_TEMP/despierta-bundle-classes.txt"
           grep -Fq "${commit_sha:0:12}" "$RUNNER_TEMP/despierta-bundle-classes.txt"
-          LANG=C jarsigner -verify "$release_dir/Despierta-2.5-unsigned.aab" > "$release_dir/AAB-SIGNING.txt" 2>&1 || true
+          LANG=C jarsigner -verify "$release_dir/$base-unsigned.aab" > "$release_dir/AAB-SIGNING.txt" 2>&1 || true
           if grep -q "jar verified" "$release_dir/AAB-SIGNING.txt"; then
             echo "AAB firmado: requiere comprobar que el certificado corresponda a la clave de carga de Google Play." >> "$release_dir/AAB-SIGNING.txt"
           else
             echo "AAB sin firma de publicación: debe firmarse con la clave de carga antes de enviarlo a Google Play." >> "$release_dir/AAB-SIGNING.txt"
           fi
+          cp CHANGELOG.md "$release_dir/CAMBIOS.md"
           {
             echo "commit=$commit_sha"
-            echo "versionName=2.5"
-            echo "versionCode=8"
-            sha256sum "$release_dir/Despierta-2.5.apk"
-            sha256sum "$release_dir/Despierta-2.5-unsigned.aab"
+            echo "versionName=$version_name"
+            echo "versionCode=$version_code"
+            sha256sum "$release_dir/$base.apk"
+            sha256sum "$release_dir/$base-fluida.apk"
+            sha256sum "$release_dir/$base-unsigned.aab"
           } > "$release_dir/BUILD-INFO.txt"
 
       - name: Publicar APK y AAB
         uses: actions/upload-artifact@v4
         with:
-          name: Despierta-2.5
-          path: app/build/outputs/despierta-2.5/
+          name: Despierta-${{ steps.version.outputs.version }}
+          path: app/build/outputs/despierta-release/
           if-no-files-found: error
           retention-days: 14
 
   instrumented-tests:
+    name: instrumented-tests (${{ matrix.label }})
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Android14
+            display-name: Android 14 (Google APIs)
+            api-level: 34
+            target: google_apis
+          - label: Android16
+            display-name: Android 16 (AOSP ATD)
+            api-level: 36
+            target: aosp_atd
     steps:
       - name: Descargar proyecto
         uses: actions/checkout@v4
@@ -94,14 +135,15 @@ jobs:
       - name: Compilar APK y pruebas instrumentadas
         run: ./gradlew assembleDebug assembleDebugAndroidTest --stacktrace
 
-      - name: Pruebas en Android 14 (Google APIs)
+      - name: Pruebas en ${{ matrix.display-name }}
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
-          api-level: 34
-          target: google_apis
+          api-level: ${{ matrix.api-level }}
+          target: ${{ matrix.target }}
           arch: x86_64
           profile: pixel_2
           disable-animations: true
+          emulator-boot-timeout: 900
           script: |
             mkdir -p app/build/outputs/androidTest-results/diagnostics
             bash .github/scripts/wait-for-android.sh app/build/outputs/androidTest-results/diagnostics/emulator-readiness.txt
@@ -109,50 +151,94 @@ jobs:
             bash .github/scripts/install-apk-with-retry.sh app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk app/build/outputs/androidTest-results/diagnostics/test-install.txt
             adb shell cmd package compile -m speed -f com.example.despierta
             adb shell cmd package compile -m speed -f com.example.despierta.test
-            adb logcat -c
-            adb shell am force-stop com.example.despierta || true
-            adb shell am instrument -w -r -e class com.example.despierta.AlarmPersistenceInstrumentedTest,com.example.despierta.AlarmDeliveryInstrumentedTest com.example.despierta.test/androidx.test.runner.AndroidJUnitRunner > app/build/outputs/androidTest-results/diagnostics/core-instrumentation.txt 2>&1 || true
-            cat app/build/outputs/androidTest-results/diagnostics/core-instrumentation.txt
-            grep -q '^OK (' app/build/outputs/androidTest-results/diagnostics/core-instrumentation.txt
-            adb shell am force-stop com.example.despierta || true
-            adb shell am instrument -w -r -e class com.example.despierta.DespiertaUiInstrumentedTest com.example.despierta.test/androidx.test.runner.AndroidJUnitRunner > app/build/outputs/androidTest-results/diagnostics/ui-instrumentation.txt 2>&1 || true
-            cat app/build/outputs/androidTest-results/diagnostics/ui-instrumentation.txt
-            grep -q '^OK (' app/build/outputs/androidTest-results/diagnostics/ui-instrumentation.txt
-            adb shell settings put system font_scale 1.30
-            adb shell am force-stop com.example.despierta || true
-            adb shell am instrument -w -r -e class com.example.despierta.AlarmScreenInstrumentedTest com.example.despierta.test/androidx.test.runner.AndroidJUnitRunner > app/build/outputs/androidTest-results/diagnostics/alarm-screen-instrumentation.txt 2>&1 || true
-            adb shell settings put system font_scale 1.0 || true
-            cat app/build/outputs/androidTest-results/diagnostics/alarm-screen-instrumentation.txt
-            grep -q '^OK (' app/build/outputs/androidTest-results/diagnostics/alarm-screen-instrumentation.txt
-            cat app/build/outputs/androidTest-results/diagnostics/core-instrumentation.txt app/build/outputs/androidTest-results/diagnostics/ui-instrumentation.txt app/build/outputs/androidTest-results/diagnostics/alarm-screen-instrumentation.txt > app/build/outputs/androidTest-results/diagnostics/combined-instrumentation.txt
-            adb exec-out run-as com.example.despierta cat files/Despierta-2.5-Alarma-activa.png > app/build/outputs/androidTest-results/diagnostics/Despierta-2.5-Alarma-activa.png
-            test -s app/build/outputs/androidTest-results/diagnostics/Despierta-2.5-Alarma-activa.png
-            adb shell pm grant com.example.despierta android.permission.POST_NOTIFICATIONS || true
-            adb shell am force-stop com.example.despierta
-            adb shell am start -W -n com.example.despierta/.MainActivity
-            sleep 3
-            adb exec-out screencap -p > app/build/outputs/androidTest-results/diagnostics/Despierta-2.5-Inicio.png
-            test -s app/build/outputs/androidTest-results/diagnostics/Despierta-2.5-Inicio.png
-            adb logcat -d -v threadtime > app/build/outputs/androidTest-results/diagnostics/logcat.txt || true
+            bash .github/scripts/run-instrumented-suites.sh app/build/outputs/androidTest-results/diagnostics "${{ matrix.display-name }}"
 
       - name: Publicar informes instrumentados
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Despierta-2.5-Pruebas-Android14
+          name: Despierta-Pruebas-${{ matrix.label }}
           path: |
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Publicar capturas reales Despierta 2.5
+      - name: Publicar capturas de las pruebas
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Despierta-2.5-Capturas
+          name: Despierta-Capturas-${{ matrix.label }}
           path: |
-            app/build/outputs/androidTest-results/diagnostics/Despierta-2.5-Alarma-activa.png
-            app/build/outputs/androidTest-results/diagnostics/Despierta-2.5-Inicio.png
+            app/build/outputs/androidTest-results/diagnostics/Despierta-Alarma-activa.png
+            app/build/outputs/androidTest-results/diagnostics/Despierta-Inicio.png
           if-no-files-found: warn
           retention-days: 14
+
+  # Capturas de diseño: recorren las pantallas en un emulador y se publican en la rama
+  # `screenshots` (legible con git) solo cuando cambian. No bloquean el resto del CI.
+  screenshots:
+    name: screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: write
+    steps:
+      - name: Descargar proyecto
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Comprobar si hay cambios visuales posibles
+        id: gate
+        shell: bash
+        run: |
+          render=true
+          if git fetch -q origin screenshots 2>/dev/null; then
+            published="$(git show FETCH_HEAD:SOURCE_COMMIT 2>/dev/null | tr -d '[:space:]' || true)"
+            if [[ -n "$published" ]] && git cat-file -e "${published}^{commit}" 2>/dev/null \
+              && git diff --quiet "$published" HEAD -- app/src/main app/src/androidTest app/build.gradle.kts \
+                .github/scripts/capture-screenshots.sh .github/scripts/publish-screenshots.sh; then
+              render=false
+              echo "Sin cambios en la interfaz desde $published: no se regeneran capturas."
+            fi
+          fi
+          echo "render=$render" >> "$GITHUB_OUTPUT"
+
+      - name: Instalar Java 17
+        if: steps.gate.outputs.render == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Preparar Gradle
+        if: steps.gate.outputs.render == 'true'
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Compilar APK y recorrido de capturas
+        if: steps.gate.outputs.render == 'true'
+        run: ./gradlew assembleDebug assembleDebugAndroidTest --stacktrace
+
+      - name: Generar capturas (Android 14, Pixel 6)
+        if: steps.gate.outputs.render == 'true'
+        uses: ReactiveCircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-boot-timeout: 900
+          script: |
+            mkdir -p app/build/outputs/screenshots
+            bash .github/scripts/wait-for-android.sh app/build/outputs/screenshots/emulator-readiness.txt
+            bash .github/scripts/install-apk-with-retry.sh app/build/outputs/apk/debug/app-debug.apk app/build/outputs/screenshots/app-install.txt
+            bash .github/scripts/install-apk-with-retry.sh app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk app/build/outputs/screenshots/test-install.txt
+            bash .github/scripts/capture-screenshots.sh app/build/outputs/screenshots
+
+      - name: Publicar capturas en la rama screenshots
+        if: steps.gate.outputs.render == 'true'
+        shell: bash
+        run: bash .github/scripts/publish-screenshots.sh app/build/outputs/screenshots "${{ github.event.pull_request.head.sha || github.sha }}"
