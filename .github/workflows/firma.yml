@@ -35,16 +35,24 @@ jobs:
           [ -n "$KA" ] || missing="$missing DESPIERTA_UPLOAD_KEY_ALIAS"
           if [ -n "$missing" ]; then echo "::error title=Secretos::Faltan:$missing"; exit 1; fi
           echo "$K" | base64 -d > "$RUNNER_TEMP/upload.jks" 2>/dev/null || { echo "::error title=Secretos::DESPIERTA_UPLOAD_KEYSTORE_BASE64 no es un base64 válido (¿se copió incompleto?)"; exit 1; }
+          # Diagnóstico sin revelar secretos: tamaños, espacios y huella del archivo.
+          trim() { printf '%s' "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
+          size=$(wc -c < "$RUNNER_TEMP/upload.jks")
+          hash=$(sha256sum "$RUNNER_TEMP/upload.jks" | cut -c1-16)
+          sp_t="$(trim "$SP")"; kp_t="$(trim "$KP")"; ka_t="$(trim "$KA")"
+          echo "::notice title=Diagnóstico::base64=${#K} caracteres (esperado 5820) · clave=${size} bytes (esperado 4364) · huella_archivo=${hash} (esperada d1b483b264f6db69) · contraseña_almacén=${#SP} caracteres (esperado 32, sin espacios=${#sp_t}) · contraseña_clave=${#KP} (sin espacios=${#kp_t}) · ambas_iguales=$([ "$SP" = "$KP" ] && echo sí || echo no) · alias_correcto=$([ "$ka_t" = "despierta-upload" ] && echo sí || echo no) · alias_con_espacios=$([ "$KA" = "$ka_t" ] && echo no || echo sí)"
+          # Tolerar espacios o saltos de línea pegados por accidente al principio o al final.
+          SP="$sp_t"; KP="$kp_t"; KA="$ka_t"
+          # Valores limpios para Gradle, ocultos en los registros.
+          echo "::add-mask::$SP"; echo "::add-mask::$KP"
+          { echo "DESPIERTA_UPLOAD_STORE_PASSWORD=$SP"; echo "DESPIERTA_UPLOAD_KEY_PASSWORD=$KP"; echo "DESPIERTA_UPLOAD_KEY_ALIAS=$KA"; } >> "$GITHUB_ENV"
+          echo "$K" | tr -d '[:space:]' | base64 -d > "$RUNNER_TEMP/upload.jks" 2>/dev/null || true
           if ! keytool -list -keystore "$RUNNER_TEMP/upload.jks" -storetype PKCS12 -storepass "$SP" -alias "$KA" >/dev/null 2>&1; then
             echo "::error title=Secretos::La clave no abre con esa contraseña o ese alias (revisa STORE_PASSWORD y KEY_ALIAS, o el base64 incompleto)."; exit 1
           fi
           echo "DESPIERTA_UPLOAD_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
           echo "::notice title=Secretos::Los cuatro secretos existen y la clave abre correctamente."
       - name: Compilar AAB firmado
-        env:
-          DESPIERTA_UPLOAD_STORE_PASSWORD: ${{ secrets.DESPIERTA_UPLOAD_STORE_PASSWORD }}
-          DESPIERTA_UPLOAD_KEY_ALIAS: ${{ secrets.DESPIERTA_UPLOAD_KEY_ALIAS }}
-          DESPIERTA_UPLOAD_KEY_PASSWORD: ${{ secrets.DESPIERTA_UPLOAD_KEY_PASSWORD }}
         run: ./gradlew bundleRelease --stacktrace
       - name: Verificar firma (solo la huella pública)
         shell: bash
