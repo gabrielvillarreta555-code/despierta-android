@@ -1,3 +1,0 @@
-Intento 1: instalando despues.apk
-Performing Streamed Install
-Success

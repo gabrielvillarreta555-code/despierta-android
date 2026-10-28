@@ -1,3 +1,0 @@
---------- beginning of main
-I/DespiertaValidacion( 6549): capturada telefono-antes-precalentamiento
-I/DespiertaValidacion( 6549): capturada telefono-antes-con-alarmas-noche

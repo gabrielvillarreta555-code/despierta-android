@@ -1,3 +1,0 @@
-Intento 1: instalando antes.apk
-Performing Streamed Install
-Success

@@ -1,4 +1,0 @@
---------- beginning of main
-I/DespiertaValidacion(10107): capturada telefono-despues-precalentamiento
-I/DespiertaValidacion(10107): capturada telefono-despues-con-alarmas-noche
-I/DespiertaValidacion(10107): capturada telefono-despues-con-alarmas-bosque
