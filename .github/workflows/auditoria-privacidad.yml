@@ -1,0 +1,42 @@
+name: Auditoría de privacidad
+
+# Extrae del APK de publicación lo que importa para la privacidad: permisos finales del
+# manifiesto combinado, dependencias reales y paquetes de código incluidos. Solo lectura:
+# no publica APK ni cambia la app. Corre en ramas auditoria/**.
+on:
+  push:
+    branches: [ 'auditoria/**' ]
+
+permissions:
+  contents: read
+
+jobs:
+  auditar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compilar versión de publicación
+        run: ./gradlew assembleRelease :app:dependencies --configuration releaseRuntimeClasspath > deps.txt
+      - name: Informe
+        shell: bash
+        run: |
+          set +e
+          note() { local t="$1"; shift; local body; body="$(cat | sed 's/%/%25/g; s/\r//g' | awk 'BEGIN{ORS="%0A"}{print}')"; echo "::notice title=$t::$body"; }
+          apk="$(ls app/build/outputs/apk/release/*.apk | head -1)"
+          aapt2="$(ls -d $ANDROID_HOME/build-tools/*/ | sort -V | tail -1)aapt2"
+          echo "APK: $apk" | note "APK analizado"
+          "$aapt2" dump permissions "$apk" | note "Permisos del APK"
+          "$aapt2" dump xmltree --file AndroidManifest.xml "$apk" | grep -iE "allowBackup|fullBackupContent|dataExtractionRules|usesCleartextTraffic|networkSecurityConfig|android:name\(.*\)=\"[a-z.]*(provider|receiver|service)|E: (provider|receiver|service|activity)" | head -60 | note "Manifiesto combinado (componentes y copias)"
+          "$aapt2" dump xmltree --file AndroidManifest.xml "$apk" | grep -E "E: (provider|service|receiver|activity|uses-permission)" -A2 | grep -E "E: |A: android:name" | head -80 | note "Componentes declarados"
+          grep -E "^[+\\\\| ]+--- " deps.txt | sed -E 's/^[+\\| -]+//' | sort -u | head -120 | note "Dependencias de ejecución (release)"
+          mkdir -p dex && unzip -q -o "$apk" 'classes*.dex' -d dex
+          for f in dex/classes*.dex; do strings -n 6 "$f"; done | grep -oE "^L[a-z0-9_]+/[a-z0-9_]+/" | sort | uniq -c | sort -rn | head -40 | note "Paquetes de código en el APK"
+          for f in dex/classes*.dex; do strings -n 6 "$f"; done | grep -ciE "https?://" | note "Cadenas con http(s) en el código"
+          for f in dex/classes*.dex; do strings -n 6 "$f"; done | grep -oiE "https?://[a-z0-9./_-]+" | sort -u | head -40 | note "URL encontradas en el código"
+          for f in dex/classes*.dex; do strings -n 6 "$f"; done | grep -E "^Ljava/net/|^Ljavax/net/|^Landroid/net/http|^Lokhttp3/|^Lcom/google/firebase|^Lcom/google/android/gms" | sort -u | head -40 | note "Clases de red o de Google Play Services referenciadas"
