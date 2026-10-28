@@ -18,6 +18,9 @@ runner="com.example.despierta.test/androidx.test.runner.AndroidJUnitRunner"
 demo() { adb shell am broadcast -a com.android.systemui.demo -e command "$@" >/dev/null 2>&1 || true; }
 
 adb shell settings put global hide_error_dialogs 1 >/dev/null 2>&1 || true
+# La pantalla no debe apagarse entre instalaciones: con la pantalla apagada las capturas salen negras.
+adb shell svc power stayon true >/dev/null 2>&1 || true
+adb shell settings put system screen_off_timeout 1800000 >/dev/null 2>&1 || true
 adb shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
 adb shell wm dismiss-keyguard >/dev/null 2>&1 || true
 sleep 20
@@ -37,6 +40,9 @@ run_with() {
   adb uninstall "$pkg" >/dev/null 2>&1 || true
   bash .github/scripts/install-apk-with-retry.sh "$apk" "$out/install-$config-$version.txt" || return 1
   adb shell pm grant "$pkg" android.permission.POST_NOTIFICATIONS >/dev/null 2>&1 || true
+  adb shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
+  adb shell wm dismiss-keyguard >/dev/null 2>&1 || true
+  adb shell dumpsys power | grep -m1 -E "mWakefulness=" >> "$out/pantalla-$config-$version.txt" 2>&1 || true
   adb logcat -c || true
   timeout 600 adb shell am instrument -w -r -e etiqueta "$config-$version" \
     -e class com.example.despierta.VisualValidation,com.example.despierta.StarsAnimationCheck "$runner" > "$out/instrument-$config-$version.txt" 2>&1
