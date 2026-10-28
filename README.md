@@ -2,7 +2,7 @@
 
 Generadas automáticamente en un emulador Android 14 (Pixel 6) con datos ficticios y hora fija.
 
-Commit de origen: `a8498139368a1d57cc824357df8f3c98f0a0bed9`
+Commit de origen: `8be24840148c14183e069c9c2c1c5e951f28ca94`
 
 ## 01-alarmas
 
@@ -48,6 +48,10 @@ Commit de origen: `a8498139368a1d57cc824357df8f3c98f0a0bed9`
 
 ![11-ajustes-apariencia](capturas/11-ajustes-apariencia.png)
 
+## 12-ajustes-notificaciones
+
+![12-ajustes-notificaciones](capturas/12-ajustes-notificaciones.png)
+
 ## 13-tema-amanecer
 
 ![13-tema-amanecer](capturas/13-tema-amanecer.png)
@@ -56,13 +60,13 @@ Commit de origen: `a8498139368a1d57cc824357df8f3c98f0a0bed9`
 
 ![14-tema-bosque](capturas/14-tema-bosque.png)
 
+## 15-alarma-sonando
+
+![15-alarma-sonando](capturas/15-alarma-sonando.png)
+
 ## 16-paisaje-montana
 
 ![16-paisaje-montana](capturas/16-paisaje-montana.png)
-
-## 17-paisaje-estrellas
-
-![17-paisaje-estrellas](capturas/17-paisaje-estrellas.png)
 
 ## 18-letra-redondeada-iconos-grandes
 
