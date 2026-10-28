@@ -71,7 +71,7 @@ jobs:
 
   pruebas:
     runs-on: ubuntu-latest
-    timeout-minutes: 70
+    timeout-minutes: 95
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4

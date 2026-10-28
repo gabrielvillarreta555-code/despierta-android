@@ -20,6 +20,9 @@ for scenario in soloAlarma pantallaCerrada pantallaAbierta; do
   fi
   kill_line="$(grep -m1 -E "Killing .*despierta.*depends on provider" "$out/estabilidad-$scenario-logcat.txt" | cut -c1-300)"
   detail="$(grep -E "DespiertaAnuncios.*(escenario=|sdk_eventos)" "$out/estabilidad-$scenario-logcat.txt" | cut -c1-300 | head -4)"
-  summary+="== $scenario: $result"$'\n'"$detail"$'\n'"${kill_line:+motivo: $kill_line}"$'\n'
+  raw="$(grep -v "^INSTRUMENTATION_STATUS: \(id\|numtests\|current\|stream\)=" "$out/estabilidad-$scenario.txt" | tail -n 12 | cut -c1-220)"
+  summary+="== $scenario: $result"$'\n'"$detail"$'\n'"${kill_line:+motivo: $kill_line}"$'\n'"salida: $raw"$'\n'
 done
+# Estado del paquete y de las instrumentaciones instaladas, para diagnosticar.
+summary+="instrumentaciones: $(adb shell pm list instrumentation | tr -d '\r' | tr '\n' ' ')"$'\n'
 echo "::notice title=Estabilidad con reinicio de Play Services::$(printf '%s' "$summary" | body)"
