@@ -1,5 +1,6 @@
 package com.example.despierta
 
+import androidx.compose.ui.text.font.FontFamily
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -81,12 +82,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 internal enum class SettingsPage(val title: String, val subtitle: String, val icon: ImageVector) {
-    APPEARANCE("Apariencia", "Fondo, colores e iconos", Icons.Rounded.Palette),
+    APPEARANCE("Apariencia", "Paisaje, letra, colores e iconos", Icons.Rounded.Palette),
     ALARMS("Alarmas", "Repetición y formato de hora", Icons.Rounded.Alarm),
     SOUNDS("Sonidos y vibración", "Respuesta háptica y volumen", Icons.Rounded.MusicNote),
     NOTIFICATIONS("Notificaciones", "Recordatorios y avisos opcionales", Icons.Rounded.NotificationsActive),
     SLEEP("Sueño", "Objetivo y recordatorio", Icons.Rounded.Bedtime),
-    ACCESSIBILITY("Accesibilidad", "Tamaño del texto y animaciones", Icons.Rounded.FormatSize),
+    ACCESSIBILITY("Accesibilidad", "Texto, animaciones y fluidez", Icons.Rounded.FormatSize),
     RELIABILITY("Fiabilidad y permisos", "Que tus alarmas suenen siempre", Icons.Rounded.Shield),
     ABOUT("Información de Despierta", "Versión y privacidad", Icons.Rounded.Info)
 }
@@ -290,6 +291,83 @@ private fun AppearanceSettings(choice: ThemeChoice, onChanged: (ThemeChoice) -> 
         }
     }
 
+    // 2.7: paisaje de la cabecera, con vista previa real de cada uno.
+    SettingsGroup("PAISAJE") {
+        Row(
+            Modifier.fillMaxWidth().padding(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            SceneStyle.entries.forEach { scene ->
+                val selected = scene == choice.scene
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.White.copy(alpha = 0.04f))
+                        .border(
+                            BorderStroke(if (selected) 2.dp else 1.dp, if (selected) palette.accent else Color.White.copy(alpha = 0.08f)),
+                            RoundedCornerShape(16.dp)
+                        )
+                        .selectable(selected = selected, role = Role.RadioButton, onClick = {
+                            onChanged(choice.copy(scene = scene))
+                        })
+                        .testTag("scene_${scene.name.lowercase()}"),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    NightScene(
+                        palette = palette,
+                        style = scene,
+                        modifier = Modifier.fillMaxWidth().height(76.dp).background(palette.skyBrush)
+                    )
+                    Text(scene.label, fontSize = 12.sp, color = palette.textPrimary, modifier = Modifier.padding(vertical = 8.dp))
+                }
+            }
+        }
+    }
+
+    // 2.7: tipo de letra de toda la app.
+    SettingsGroup("TIPO DE LETRA") {
+        Row(
+            Modifier.fillMaxWidth().padding(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FontChoice.entries.forEach { font ->
+                val selected = font == choice.font
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(if (selected) palette.accent.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.05f))
+                        .border(
+                            BorderStroke(if (selected) 2.dp else 1.dp, if (selected) palette.accent else Color.White.copy(alpha = 0.08f)),
+                            RoundedCornerShape(14.dp)
+                        )
+                        .selectable(selected = selected, role = Role.RadioButton, onClick = {
+                            onChanged(choice.copy(font = font))
+                        })
+                        .padding(vertical = 10.dp)
+                        .testTag("font_${font.name.lowercase()}"),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        "9:42",
+                        fontFamily = font.family ?: FontFamily.Default,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = palette.textPrimary
+                    )
+                    Text(
+                        font.label,
+                        fontFamily = font.family ?: FontFamily.Default,
+                        fontSize = 11.sp,
+                        color = palette.textSoft,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+    }
+
     SettingsGroup("COLORES") {
         ColorChoiceRow("Acento general", choice.accent, "accent") { onChanged(choice.copy(accent = it)) }
         RowDivider()
@@ -336,6 +414,25 @@ private fun AppearanceSettings(choice: ThemeChoice, onChanged: (ThemeChoice) -> 
                     Text(style.label, fontSize = 12.sp, color = palette.textPrimary)
                 }
             }
+        }
+    }
+
+    // 2.7: tamaño y forma de los iconos.
+    SettingsGroup("TAMAÑO Y FORMA DE LOS ICONOS") {
+        Row(Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            IconSizeChoice.entries.forEach { size ->
+                ChoicePill(size.label, size == choice.iconSize, { onChanged(choice.copy(iconSize = size)) }, Modifier.testTag("icon_size_${size.name.lowercase()}"))
+            }
+        }
+        Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            IconShapeChoice.entries.forEach { shape ->
+                ChoicePill(shape.label, shape == choice.iconShape, { onChanged(choice.copy(iconShape = shape)) }, Modifier.testTag("icon_shape_${shape.name.lowercase()}"))
+            }
+        }
+        RowDivider()
+        Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            StyledIcon(Icons.Rounded.Alarm)
+            Text("Así se verán los iconos de las tarjetas", fontSize = 13.sp, color = palette.textSoft, modifier = Modifier.padding(start = 12.dp))
         }
     }
 
@@ -693,6 +790,17 @@ private fun AccessibilitySettings(choice: ThemeChoice, onChanged: (ThemeChoice) 
             ChoicePill("Grande", choice.largeText, { onChanged(choice.copy(largeText = true)) }, Modifier.testTag("text_size_large"))
         }
     }
+    // 2.7: frecuencia de pantalla.
+    SettingsGroup("FLUIDEZ DE PANTALLA") {
+        Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            RefreshChoice.entries.forEach { rate ->
+                ChoicePill(rate.label, rate == choice.refresh, { onChanged(choice.copy(refresh = rate)) }, Modifier.testTag("refresh_${rate.name.lowercase()}"))
+            }
+        }
+        FootNote(choice.refresh.detail)
+        Spacer(Modifier.height(10.dp))
+    }
+
     SettingsGroup("ANIMACIONES") {
         Row(
             Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(14.dp),

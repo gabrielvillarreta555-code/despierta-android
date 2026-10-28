@@ -47,6 +47,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -126,6 +127,7 @@ internal fun AlarmHome(
                 // El paisaje se desplaza más despacio que la lista (paralaje discreto).
                 NightScene(
                     palette = palette,
+                    style = LocalUiOptions.current.scene,
                     twinkle = { twinkleState?.value ?: -1f },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -338,7 +340,7 @@ private fun ClockCard(nowMillis: Long, animated: Boolean) {
                 fontWeight = FontWeight.Light,
                 letterSpacing = (-2.5).sp,
                 // Resplandor del color del tema detrás de las cifras.
-                style = TabularFigures.copy(shadow = Shadow(palette.accent.copy(alpha = 0.6f), Offset.Zero, 36f)),
+                style = LocalTextStyle.current.merge(TabularFigures).copy(shadow = Shadow(palette.accent.copy(alpha = 0.6f), Offset.Zero, 36f)),
                 color = Color.White
             )
             Column(Modifier.padding(start = 10.dp)) {
@@ -346,7 +348,7 @@ private fun ClockCard(nowMillis: Long, animated: Boolean) {
                 Text(
                     now.format(DateTimeFormatter.ofPattern(":ss")),
                     fontSize = 15.sp,
-                    style = TabularFigures,
+                    style = LocalTextStyle.current.merge(TabularFigures),
                     color = palette.textSoft
                 )
             }
@@ -494,7 +496,7 @@ private fun AlarmRow(
                     fontSize = 34.sp,
                     lineHeight = 36.sp,
                     fontWeight = FontWeight.Medium,
-                    style = TabularFigures,
+                    style = LocalTextStyle.current.merge(TabularFigures),
                     color = palette.textPrimary
                 )
                 Text(

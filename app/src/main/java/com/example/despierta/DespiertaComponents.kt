@@ -294,9 +294,12 @@ internal fun StyledIcon(
     size: Dp = DespiertaDimens.RowIconSize
 ) {
     val palette = LocalDespiertaPalette.current
-    val style = LocalUiOptions.current.iconStyle
+    val options = LocalUiOptions.current
+    val style = options.iconStyle
     val color = tint ?: palette.cardIcon
-    val shape = RoundedCornerShape(size * 0.32f)
+    // 2.7: tamaño y forma elegidos en Apariencia.
+    val size = size * options.iconScale
+    val shape = RoundedCornerShape(size * options.iconCornerFraction)
     when (style) {
         IconStyle.MINIMAL -> Box(modifier.size(size), contentAlignment = Alignment.Center) {
             Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(size * 0.62f))

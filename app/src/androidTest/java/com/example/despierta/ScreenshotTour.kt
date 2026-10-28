@@ -62,6 +62,18 @@ class ScreenshotTour {
             // Alarmas en los otros temas, al principio: son las capturas clave de la 2.6.
             runCatching { withApp(ThemeChoice("amanecer", null)) { capture("13-tema-amanecer") } }
             runCatching { withApp(ThemeChoice("bosque", null)) { capture("14-tema-bosque") } }
+            // 2.7: paisajes, letra e iconos nuevos.
+            runCatching { withApp(ThemeChoice.DEFAULT.copy(scene = SceneStyle.MONTANA)) { capture("16-paisaje-montana") } }
+            runCatching { withApp(ThemeChoice.DEFAULT.copy(scene = SceneStyle.ESTRELLAS)) { capture("17-paisaje-estrellas") } }
+            runCatching {
+                withApp(
+                    ThemeChoice.DEFAULT.copy(
+                        font = FontChoice.REDONDEADA,
+                        iconSize = IconSizeChoice.GRANDE,
+                        iconShape = IconShapeChoice.CIRCULO
+                    )
+                ) { capture("18-letra-redondeada-iconos-grandes") }
+            }
             session {
                 step("03-editor-alarma") {
                     // 2.6: Editar está en el menú "⋯" de cada fila.
@@ -96,6 +108,12 @@ class ScreenshotTour {
                 step("10-ajustes") { composeRule.onNodeWithTag("nav_settings").performClick() }
                 step("11-ajustes-apariencia") {
                     composeRule.onNodeWithTag("settings_appearance").performScrollTo().performClick()
+                }
+                step("19-ajustes-paisaje-letra") {
+                    composeRule.onNodeWithTag("font_sistema").performScrollTo()
+                }
+                step("20-ajustes-iconos") {
+                    composeRule.onNodeWithTag("icon_shape_redondeada").performScrollTo()
                 }
             }
             session {

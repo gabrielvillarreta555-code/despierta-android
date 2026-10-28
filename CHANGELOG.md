@@ -6,6 +6,30 @@ Cada versión tiene un `versionName` y un `versionCode` único y creciente en
 (`Despierta-<versión>`). Cada versión estable queda guardada en una rama
 `estable/<versión>` (por ejemplo `estable/2.5`) para poder volver a ella.
 
+## 2.7 — versionCode 10 — Personalización: paisaje, letra, iconos y fluidez
+
+Incluye la 2.6 (diseño verde) y sus correcciones. Sin cambios en el motor de alarmas.
+
+### Nuevo en Ajustes
+- **Apariencia → Paisaje:** Bosque (el de siempre), Montaña (cumbres con nieve, sin pinos) y
+  Noche estrellada (más estrellas y vía láctea, colinas bajas). Con vista previa de cada uno.
+- **Apariencia → Tipo de letra:** Sistema, Moderna (Outfit), Redondeada (Nunito) y Clásica
+  (Lora), para toda la app. Fuentes con licencia OFL incluidas en `assets/licenses`.
+- **Apariencia → Tamaño y forma de los iconos:** pequeños, normales o grandes; fondo
+  redondeado, en círculo o cuadrado. Se suman al estilo de iconos que ya existía.
+- **Accesibilidad → Fluidez de pantalla:** máxima (90/120 Hz si el teléfono lo admite),
+  60 Hz para ahorrar batería, o que decida Android. Se aplica al momento.
+
+### Correcciones que vienen de la revisión de la 2.6
+- Paisaje: el suelo cercano tapa la base de los pinos; desaparecen las barras oscuras de los
+  troncos bajo la copa (se veían en el teléfono y en el emulador).
+- El reloj con letra fina ya no hace crecer su tarjeta.
+
+### Desarrollo
+- Validación visual "antes y después" en ramas `validacion/**` y auditoría de privacidad en
+  ramas `auditoria/**`. El recorrido de capturas incluye los paisajes, la letra y los ajustes
+  nuevos.
+
 ## 2.6 — versionCode 9 — Rediseño de la pantalla principal (en revisión)
 
 Solo cambia la pantalla de Alarmas y lo común que necesita. Sueño, Turnos, Ajustes, el editor

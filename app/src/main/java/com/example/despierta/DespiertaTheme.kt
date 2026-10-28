@@ -152,6 +152,11 @@ private const val PREF_THEME_BUTTON = "theme_button"
 private const val PREF_THEME_ICON_STYLE = "theme_icon_style"
 private const val PREF_THEME_LARGE_TEXT = "theme_large_text"
 private const val PREF_THEME_MOTION = "theme_motion"
+private const val PREF_THEME_SCENE = "theme_scene"
+private const val PREF_THEME_FONT = "theme_font"
+private const val PREF_THEME_ICON_SIZE = "theme_icon_size"
+private const val PREF_THEME_ICON_SHAPE = "theme_icon_shape"
+private const val PREF_THEME_REFRESH = "theme_refresh"
 
 /** Apariencia guardada. Los colores nulos usan los del fondo elegido. */
 internal data class ThemeChoice(
@@ -162,7 +167,12 @@ internal data class ThemeChoice(
     val buttonColor: Color? = null,
     val iconStyle: IconStyle = IconStyle.ROUNDED,
     val largeText: Boolean = false,
-    val motion: MotionLevel = MotionLevel.SUBTLE
+    val motion: MotionLevel = MotionLevel.SUBTLE,
+    val scene: SceneStyle = SceneStyle.BOSQUE,
+    val font: FontChoice = FontChoice.SISTEMA,
+    val iconSize: IconSizeChoice = IconSizeChoice.NORMAL,
+    val iconShape: IconShapeChoice = IconShapeChoice.REDONDEADA,
+    val refresh: RefreshChoice = RefreshChoice.MAXIMA
 ) {
     fun toPalette(): DespiertaPalette {
         val base = DespiertaPresets.firstOrNull { it.id == presetId } ?: DespiertaPresets.first()
@@ -202,7 +212,12 @@ internal fun loadThemeChoice(prefs: SharedPreferences): ThemeChoice {
         largeText = prefs.getBoolean(PREF_THEME_LARGE_TEXT, defaults.largeText),
         motion = MotionLevel.entries.firstOrNull {
             it.name == prefs.getString(PREF_THEME_MOTION, null)
-        } ?: defaults.motion
+        } ?: defaults.motion,
+        scene = SceneStyle.entries.firstOrNull { it.name == prefs.getString(PREF_THEME_SCENE, null) } ?: defaults.scene,
+        font = FontChoice.entries.firstOrNull { it.name == prefs.getString(PREF_THEME_FONT, null) } ?: defaults.font,
+        iconSize = IconSizeChoice.entries.firstOrNull { it.name == prefs.getString(PREF_THEME_ICON_SIZE, null) } ?: defaults.iconSize,
+        iconShape = IconShapeChoice.entries.firstOrNull { it.name == prefs.getString(PREF_THEME_ICON_SHAPE, null) } ?: defaults.iconShape,
+        refresh = RefreshChoice.entries.firstOrNull { it.name == prefs.getString(PREF_THEME_REFRESH, null) } ?: defaults.refresh
     )
 }
 
@@ -216,6 +231,11 @@ internal fun saveThemeChoice(prefs: SharedPreferences, choice: ThemeChoice) {
     editor.putString(PREF_THEME_ICON_STYLE, choice.iconStyle.name)
     editor.putBoolean(PREF_THEME_LARGE_TEXT, choice.largeText)
     editor.putString(PREF_THEME_MOTION, choice.motion.name)
+    editor.putString(PREF_THEME_SCENE, choice.scene.name)
+    editor.putString(PREF_THEME_FONT, choice.font.name)
+    editor.putString(PREF_THEME_ICON_SIZE, choice.iconSize.name)
+    editor.putString(PREF_THEME_ICON_SHAPE, choice.iconShape.name)
+    editor.putString(PREF_THEME_REFRESH, choice.refresh.name)
     editor.apply()
 }
 
@@ -224,7 +244,10 @@ internal data class UiOptions(
     val iconStyle: IconStyle = IconStyle.ROUNDED,
     /** 0 desactiva las animaciones; 1 es la duración completa. */
     val motionFactor: Float = MotionLevel.SUBTLE.factor,
-    val systemReducedMotion: Boolean = false
+    val systemReducedMotion: Boolean = false,
+    val iconScale: Float = 1f,
+    val iconCornerFraction: Float = 0.32f,
+    val scene: SceneStyle = SceneStyle.BOSQUE
 ) {
     /** Duración de una animación, o 0 si el usuario o Android piden reducir el movimiento. */
     fun millis(base: Int): Int = (base * motionFactor).toInt().coerceAtLeast(0)
@@ -249,7 +272,10 @@ internal fun DespiertaTheme(
     val options = UiOptions(
         iconStyle = choice.iconStyle,
         motionFactor = if (reducedMotion) 0f else choice.motion.factor,
-        systemReducedMotion = reducedMotion
+        systemReducedMotion = reducedMotion,
+        iconScale = choice.iconSize.scale,
+        iconCornerFraction = choice.iconShape.cornerFraction,
+        scene = choice.scene
     )
     val density = LocalDensity.current
     val scaledDensity = if (choice.largeText) {
@@ -263,6 +289,7 @@ internal fun DespiertaTheme(
         LocalDensity provides scaledDensity
     ) {
         MaterialTheme(
+            typography = typographyFor(choice.font.family),
             colorScheme = darkColorScheme(
                 primary = palette.accent,
                 onPrimary = palette.onAccent,

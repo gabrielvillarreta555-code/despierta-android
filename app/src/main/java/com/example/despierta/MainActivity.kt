@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AlarmService.ensureNotificationChannel(this)
-        requestHighestRefreshRate()
+        applyRefreshRate(loadThemeChoice(getSharedPreferences(DESPIERTA_UI_PREFS, MODE_PRIVATE)).refresh)
         // Dibuja detrás de las barras del sistema (sin franja negra arriba) con iconos claros.
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
@@ -48,10 +48,11 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Pide a Android la frecuencia de refresco más alta de la pantalla (90 o 120 Hz si existe)
-     * a la resolución actual. Android la baja por su cuenta cuando no hay movimiento.
+     * Frecuencia de pantalla elegida en Accesibilidad (2.7): la más alta a la resolución actual
+     * (Android la baja por su cuenta cuando no hay movimiento), la más cercana a 60 Hz, o
+     * ninguna petición para que decida Android.
      */
-    private fun requestHighestRefreshRate() {
+    internal fun applyRefreshRate(choice: RefreshChoice) {
         runCatching {
             val currentDisplay = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 display
@@ -64,12 +65,15 @@ class MainActivity : ComponentActivity() {
                 .filter {
                     it.physicalWidth == current.physicalWidth && it.physicalHeight == current.physicalHeight
                 }
-                .maxByOrNull { it.refreshRate }
-                ?: return
-            if (best.modeId != current.modeId || best.refreshRate > current.refreshRate) {
-                window.attributes = window.attributes.also { it.preferredDisplayModeId = best.modeId }
-            }
-            AlarmLog.info("refresh_rate", "hz=${best.refreshRate}")
+                .let { modes ->
+                    when (choice) {
+                        RefreshChoice.MAXIMA -> modes.maxByOrNull { it.refreshRate }
+                        RefreshChoice.AHORRO -> modes.minByOrNull { kotlin.math.abs(it.refreshRate - 60f) }
+                        RefreshChoice.SISTEMA -> null
+                    }
+                }
+            window.attributes = window.attributes.also { it.preferredDisplayModeId = best?.modeId ?: 0 }
+            AlarmLog.info("refresh_rate", "choice=${choice.name} hz=${best?.refreshRate} actual=${current.refreshRate}")
         }.onFailure { AlarmLog.error("refresh_rate_failed", "", it) }
     }
 
@@ -106,6 +110,8 @@ class MainActivity : ComponentActivity() {
         var themeChoice by remember {
             mutableStateOf(loadThemeChoice(uiPreferences))
         }
+        // 2.7: la fluidez elegida se aplica al momento.
+        LaunchedEffect(themeChoice.refresh) { applyRefreshRate(themeChoice.refresh) }
 
         val notificationPermission = rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission()

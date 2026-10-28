@@ -327,7 +327,12 @@ internal fun SleepDial(
  * (Noche, Amanecer o Bosque), así que se adapta sin imágenes. El suelo se funde con el fondo.
  */
 @Composable
-internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier, twinkle: () -> Float = { -1f }) {
+internal fun NightScene(
+    palette: DespiertaPalette,
+    modifier: Modifier = Modifier,
+    twinkle: () -> Float = { -1f },
+    style: SceneStyle = SceneStyle.BOSQUE
+) {
     Canvas(modifier) {
         val w = size.width
         val h = size.height
@@ -359,9 +364,28 @@ internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier
         }
         // Las estrellas titilan (fase leída al dibujar: no recompone la pantalla).
         val phase = twinkle()
-        repeat(46) { i ->
+        val starCount = if (style == SceneStyle.ESTRELLAS) 150 else 46
+        val starDepth = if (style == SceneStyle.ESTRELLAS) 0.52f else 0.40f
+        if (style == SceneStyle.ESTRELLAS) {
+            // Vía láctea: una franja diagonal tenue de luz.
+            drawPath(
+                Path().apply {
+                    moveTo(-w * 0.1f, h * 0.55f)
+                    lineTo(w * 0.55f, -h * 0.05f)
+                    lineTo(w * 0.85f, -h * 0.05f)
+                    lineTo(w * 0.15f, h * 0.62f)
+                    close()
+                },
+                brush = Brush.linearGradient(
+                    listOf(Color.Transparent, Color.White.copy(alpha = 0.10f), lerp(palette.accent, Color.White, 0.5f).copy(alpha = 0.12f), Color.Transparent),
+                    start = Offset(w * 0.05f, h * 0.6f),
+                    end = Offset(w * 0.65f, 0f)
+                )
+            )
+        }
+        repeat(starCount) { i ->
             val x = next() * w
-            val y = (0.04f + next() * 0.40f) * h
+            val y = (0.04f + next() * starDepth) * h
             val r = (0.7f + next() * 1.3f) * density
             val base = 0.25f + next() * 0.6f
             val alpha = if (phase < 0f) base else base * (0.35f + 0.65f * ((sin(phase * 2f * PI.toFloat() + i * 1.9f) + 1f) / 2f))
@@ -387,14 +411,59 @@ internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier
         // Cordillera lejana, media y cercana: más clara cuanto más lejos.
         val far = lerp(palette.hero.first(), palette.sky.first(), 0.25f)
         val mid = lerp(palette.hero[1], palette.hill, 0.35f)
-        drawPath(
-            ridge(0.52f, listOf(0.1f to 0.38f, 0.22f to 0.47f, 0.36f to 0.33f, 0.52f to 0.46f, 0.68f to 0.36f, 0.84f to 0.47f, 1.05f to 0.40f)),
-            color = far.copy(alpha = 0.85f)
-        )
-        drawPath(
-            ridge(0.62f, listOf(0.08f to 0.56f, 0.24f to 0.48f, 0.42f to 0.60f, 0.58f to 0.50f, 0.76f to 0.59f, 0.92f to 0.51f, 1.05f to 0.57f)),
-            color = mid
-        )
+        when (style) {
+            SceneStyle.BOSQUE -> {
+                drawPath(
+                    ridge(0.52f, listOf(0.1f to 0.38f, 0.22f to 0.47f, 0.36f to 0.33f, 0.52f to 0.46f, 0.68f to 0.36f, 0.84f to 0.47f, 1.05f to 0.40f)),
+                    color = far.copy(alpha = 0.85f)
+                )
+                drawPath(
+                    ridge(0.62f, listOf(0.08f to 0.56f, 0.24f to 0.48f, 0.42f to 0.60f, 0.58f to 0.50f, 0.76f to 0.59f, 0.92f to 0.51f, 1.05f to 0.57f)),
+                    color = mid
+                )
+            }
+            SceneStyle.MONTANA -> {
+                // Cumbres afiladas con nieve en las puntas.
+                fun peaks(points: List<Pair<Float, Float>>): Path = Path().apply {
+                    moveTo(0f, h)
+                    points.forEach { (px, py) -> lineTo(w * px, h * py) }
+                    lineTo(w, h)
+                    close()
+                }
+                val back = listOf(0f to 0.50f, 0.12f to 0.36f, 0.24f to 0.47f, 0.38f to 0.24f, 0.52f to 0.44f, 0.66f to 0.30f, 0.80f to 0.46f, 0.92f to 0.34f, 1f to 0.42f)
+                drawPath(peaks(back), color = far.copy(alpha = 0.9f))
+                val snow = Color.White.copy(alpha = 0.55f)
+                listOf(0.12f to 0.36f, 0.38f to 0.24f, 0.66f to 0.30f, 0.92f to 0.34f).forEach { (px, py) ->
+                    val cx = w * px
+                    val cy = h * py
+                    val sw = w * 0.045f
+                    val sh = h * 0.06f
+                    drawPath(
+                        Path().apply {
+                            moveTo(cx, cy)
+                            lineTo(cx + sw, cy + sh)
+                            lineTo(cx + sw * 0.35f, cy + sh * 0.75f)
+                            lineTo(cx, cy + sh * 1.05f)
+                            lineTo(cx - sw * 0.4f, cy + sh * 0.7f)
+                            lineTo(cx - sw, cy + sh)
+                            close()
+                        },
+                        color = snow
+                    )
+                }
+                drawPath(
+                    peaks(listOf(0f to 0.62f, 0.16f to 0.50f, 0.30f to 0.60f, 0.46f to 0.44f, 0.62f to 0.58f, 0.78f to 0.47f, 0.92f to 0.58f, 1f to 0.54f)),
+                    color = mid
+                )
+            }
+            SceneStyle.ESTRELLAS -> {
+                // Colinas bajas y suaves: el protagonista es el cielo.
+                drawPath(
+                    ridge(0.66f, listOf(0.15f to 0.60f, 0.35f to 0.66f, 0.55f to 0.58f, 0.80f to 0.64f, 1.05f to 0.60f)),
+                    color = far.copy(alpha = 0.55f)
+                )
+            }
+        }
 
         // Neblina baja entre las cordilleras y los pinos: separa planos y suaviza la transición.
         drawRect(
@@ -439,7 +508,7 @@ internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier
         listOf(
             0.02f to 0.44f, 0.08f to 0.52f, 0.145f to 0.38f, 0.205f to 0.30f,
             0.80f to 0.30f, 0.86f to 0.40f, 0.925f to 0.50f, 0.985f to 0.42f
-        ).forEach { (x, th) -> pine(w * x, treeBase, h * th) }
+        ).forEach { (x, th) -> if (style == SceneStyle.BOSQUE) pine(w * x, treeBase, h * th) }
 
         // Suelo cercano por delante de los pinos: tapa su base, así nacen detrás de la colina.
         // (Antes los troncos asomaban bajo la copa como barras oscuras sobre el suelo.)

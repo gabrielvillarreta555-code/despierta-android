@@ -389,7 +389,7 @@ private fun AppNavigation(
                 verticalArrangement = Arrangement.Center
             ) {
                 Box {
-                    Icon(section.icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
+                    Icon(section.icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp * LocalUiOptions.current.iconScale))
                     if (section == AppSection.SETTINGS && permissionCount > 0) {
                         Box(
                             Modifier
