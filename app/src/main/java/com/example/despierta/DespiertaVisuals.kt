@@ -396,19 +396,6 @@ internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier
             color = mid
         )
 
-        // Suelo cercano que se funde con el fondo de la pantalla.
-        val ground = Brush.verticalGradient(
-            0f to palette.hill,
-            0.55f to palette.hill,
-            1f to palette.hill.copy(alpha = 0f),
-            startY = h * 0.64f,
-            endY = h
-        )
-        drawPath(
-            ridge(0.72f, listOf(0.2f to 0.68f, 0.5f to 0.74f, 0.8f to 0.67f, 1.05f to 0.71f)),
-            brush = ground
-        )
-
         // Neblina baja entre las cordilleras y los pinos: separa planos y suaviza la transición.
         drawRect(
             brush = Brush.verticalGradient(
@@ -446,12 +433,6 @@ internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier
                     brush = treeBrush
                 )
             }
-            // Tronco corto bajo la copa; se desvanece con la neblina (sin barras en los bordes).
-            drawRect(
-                brush = treeBrush,
-                topLeft = Offset(cx - height * 0.03f, baseY - height * 0.1f),
-                size = Size(height * 0.06f, height * 0.14f)
-            )
         }
         // Pinos que enmarcan los lados, sobre el suelo cercano.
         val treeBase = h * 0.80f
@@ -459,5 +440,19 @@ internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier
             0.02f to 0.44f, 0.08f to 0.52f, 0.145f to 0.38f, 0.205f to 0.30f,
             0.80f to 0.30f, 0.86f to 0.40f, 0.925f to 0.50f, 0.985f to 0.42f
         ).forEach { (x, th) -> pine(w * x, treeBase, h * th) }
+
+        // Suelo cercano por delante de los pinos: tapa su base, así nacen detrás de la colina.
+        // (Antes los troncos asomaban bajo la copa como barras oscuras sobre el suelo.)
+        val ground = Brush.verticalGradient(
+            0f to palette.hill,
+            0.55f to palette.hill,
+            1f to palette.hill.copy(alpha = 0f),
+            startY = h * 0.64f,
+            endY = h
+        )
+        drawPath(
+            ridge(0.72f, listOf(0.2f to 0.68f, 0.5f to 0.74f, 0.8f to 0.67f, 1.05f to 0.71f)),
+            brush = ground
+        )
     }
 }
