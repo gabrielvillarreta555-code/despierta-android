@@ -37,8 +37,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -99,9 +103,8 @@ internal fun despiertaSwitchColors(): SwitchColors {
         checkedTrackColor = palette.button,
         checkedBorderColor = palette.button,
         uncheckedThumbColor = Color(0xFFE9E3FF),
-        // Del color del tema, no un violeta fijo: en Bosque y Amanecer desentonaba.
-        uncheckedTrackColor = Color.White.copy(alpha = 0.14f),
-        uncheckedBorderColor = Color.White.copy(alpha = 0.2f)
+        uncheckedTrackColor = Color(0xFF3A3160),
+        uncheckedBorderColor = Color(0xFF3A3160)
     )
 }
 
@@ -123,6 +126,80 @@ internal fun GlowCard(
             .background(brush ?: palette.cardBrush)
             .border(BorderStroke(1.dp, borderColor), shape)
             .padding(contentPadding)
+    ) {
+        content()
+    }
+}
+
+/**
+ * Superficie de cristal al estilo iOS (2.6): relleno translúcido con luz desde arriba, brillo en
+ * la esquina superior izquierda, borde especular (claro arriba-izquierda, tenue en el centro y
+ * un reflejo abajo-derecha) y sombra suave que la separa del fondo.
+ *
+ * [sheen] escala todos los brillos (0 = sin cristal, útil para animar una selección).
+ */
+internal fun Modifier.glass(
+    shape: Shape,
+    base: Color,
+    elevation: Dp = 14.dp,
+    sheen: Float = 1f
+): Modifier = this
+    .shadow(
+        elevation = elevation,
+        shape = shape,
+        clip = false,
+        ambientColor = Color.Black.copy(alpha = 0.45f),
+        spotColor = Color.Black.copy(alpha = 0.60f)
+    )
+    .clip(shape)
+    .background(base)
+    .drawBehind {
+        // Luz que baja desde arriba y se oscurece un poco al fondo: da volumen.
+        drawRect(
+            Brush.verticalGradient(
+                0f to Color.White.copy(alpha = 0.17f * sheen),
+                0.45f to Color.White.copy(alpha = 0.05f * sheen),
+                1f to Color.Black.copy(alpha = 0.16f * sheen)
+            )
+        )
+        // Reflejo suave en la esquina superior izquierda.
+        drawRect(
+            Brush.radialGradient(
+                colors = listOf(Color.White.copy(alpha = 0.14f * sheen), Color.Transparent),
+                center = Offset(size.width * 0.12f, 0f),
+                radius = size.maxDimension * 0.75f
+            )
+        )
+    }
+    .border(
+        BorderStroke(
+            1.2.dp,
+            Brush.linearGradient(
+                0f to Color.White.copy(alpha = 0.55f * sheen),
+                0.35f to Color.White.copy(alpha = 0.10f * sheen),
+                0.7f to Color.White.copy(alpha = 0.06f * sheen),
+                1f to Color.White.copy(alpha = 0.26f * sheen)
+            )
+        ),
+        shape
+    )
+
+/** Tarjeta de cristal con volumen: la versión de la 2.6 de [GlowCard], de momento solo en Alarmas. */
+@Composable
+internal fun GlassCard(
+    modifier: Modifier = Modifier,
+    corner: Dp = DespiertaDimens.CardCorner,
+    elevation: Dp = 14.dp,
+    baseAlpha: Float = 0.62f,
+    onClick: (() -> Unit)? = null,
+    content: @Composable () -> Unit
+) {
+    val palette = LocalDespiertaPalette.current
+    val shape = RoundedCornerShape(corner)
+    Column(
+        modifier
+            .glass(shape, palette.card.last().copy(alpha = baseAlpha), elevation)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
         content()
     }

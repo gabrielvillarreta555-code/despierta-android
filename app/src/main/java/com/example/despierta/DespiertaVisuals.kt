@@ -318,3 +318,142 @@ internal fun SleepDial(
         )
     }
 }
+
+// ---------- Paisaje de la cabecera (2.6) ----------
+
+/**
+ * Escena nocturna a sangre para la cabecera de Alarmas: resplandor en el horizonte, estrellas,
+ * tres cordilleras con profundidad y pinos en primer plano. Los colores salen del tema
+ * (Noche, Amanecer o Bosque), así que se adapta sin imágenes. El suelo se funde con el fondo.
+ */
+@Composable
+internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val w = size.width
+        val h = size.height
+
+        // Resplandor del horizonte: halo amplio del tema y una franja luminosa con el acento,
+        // justo detrás de la cordillera lejana (da profundidad, como un atardecer).
+        drawRect(
+            brush = Brush.radialGradient(
+                listOf(palette.hero.first().copy(alpha = 0.65f), Color.Transparent),
+                center = Offset(w * 0.5f, h * 0.48f),
+                radius = w * 0.9f
+            )
+        )
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to Color.Transparent,
+                0.6f to lerp(palette.accent, palette.hero.first(), 0.45f).copy(alpha = 0.42f),
+                1f to Color.Transparent,
+                startY = h * 0.22f,
+                endY = h * 0.52f
+            )
+        )
+
+        // Estrellas en posiciones fijas (generador determinista, mismas en cada dibujo).
+        var seed = 0x2F6E2B1
+        fun next(): Float {
+            seed = seed * 1103515245 + 12345
+            return ((seed ushr 8) and 0xFFFF) / 65535f
+        }
+        repeat(46) {
+            val x = next() * w
+            val y = (0.04f + next() * 0.40f) * h
+            val r = (0.7f + next() * 1.3f) * density
+            drawCircle(Color.White.copy(alpha = 0.25f + next() * 0.6f), r, Offset(x, y))
+        }
+
+        fun ridge(base: Float, peaks: List<Pair<Float, Float>>): Path = Path().apply {
+            moveTo(0f, h * base)
+            var prev = Offset(0f, h * base)
+            for ((px, py) in peaks) {
+                val point = Offset(w * px, h * py)
+                val mid = Offset((prev.x + point.x) / 2f, (prev.y + point.y) / 2f)
+                @Suppress("DEPRECATION")
+                quadraticBezierTo(prev.x, prev.y, mid.x, mid.y)
+                prev = point
+            }
+            lineTo(w, prev.y)
+            lineTo(w, h)
+            lineTo(0f, h)
+            close()
+        }
+
+        // Cordillera lejana, media y cercana: más clara cuanto más lejos.
+        val far = lerp(palette.hero.first(), palette.sky.first(), 0.25f)
+        val mid = lerp(palette.hero[1], palette.hill, 0.35f)
+        drawPath(
+            ridge(0.52f, listOf(0.1f to 0.38f, 0.22f to 0.47f, 0.36f to 0.33f, 0.52f to 0.46f, 0.68f to 0.36f, 0.84f to 0.47f, 1.05f to 0.40f)),
+            color = far.copy(alpha = 0.85f)
+        )
+        drawPath(
+            ridge(0.62f, listOf(0.08f to 0.56f, 0.24f to 0.48f, 0.42f to 0.60f, 0.58f to 0.50f, 0.76f to 0.59f, 0.92f to 0.51f, 1.05f to 0.57f)),
+            color = mid
+        )
+
+        // Suelo cercano que se funde con el fondo de la pantalla.
+        val ground = Brush.verticalGradient(
+            0f to palette.hill,
+            0.55f to palette.hill,
+            1f to palette.hill.copy(alpha = 0f),
+            startY = h * 0.64f,
+            endY = h
+        )
+        drawPath(
+            ridge(0.72f, listOf(0.2f to 0.68f, 0.5f to 0.74f, 0.8f to 0.67f, 1.05f to 0.71f)),
+            brush = ground
+        )
+
+        // Neblina baja entre las cordilleras y los pinos: separa planos y suaviza la transición.
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to Color.Transparent,
+                0.5f to lerp(palette.hero.first(), palette.accent, 0.25f).copy(alpha = 0.16f),
+                1f to Color.Transparent,
+                startY = h * 0.56f,
+                endY = h * 0.88f
+            )
+        )
+
+        // Pinos en los bordes, de tres pisos cada uno. Se disuelven en la neblina hacia abajo,
+        // sin un corte duro donde termina el paisaje.
+        val treeColor = lerp(palette.hill, Color.Black, 0.22f)
+        val treeBrush = Brush.verticalGradient(
+            0f to treeColor,
+            0.78f to treeColor,
+            1f to treeColor.copy(alpha = 0f),
+            startY = 0f,
+            endY = h
+        )
+        fun pine(cx: Float, baseY: Float, height: Float) {
+            val half = height * 0.32f
+            for (tier in 0 until 3) {
+                val top = baseY - height + tier * height * 0.24f
+                val bottom = top + height * 0.46f
+                val spread = half * (0.55f + tier * 0.25f)
+                drawPath(
+                    Path().apply {
+                        moveTo(cx, top)
+                        lineTo(cx + spread, bottom)
+                        lineTo(cx - spread, bottom)
+                        close()
+                    },
+                    brush = treeBrush
+                )
+            }
+            // El tronco baja hasta el final del paisaje y se desvanece con el resto.
+            drawRect(
+                brush = treeBrush,
+                topLeft = Offset(cx - height * 0.03f, baseY - height * 0.1f),
+                size = Size(height * 0.06f, h - (baseY - height * 0.1f))
+            )
+        }
+        // Pinos que enmarcan los lados, sobre el suelo cercano.
+        val treeBase = h * 0.80f
+        listOf(
+            0.02f to 0.44f, 0.08f to 0.52f, 0.145f to 0.38f, 0.205f to 0.30f,
+            0.80f to 0.30f, 0.86f to 0.40f, 0.925f to 0.50f, 0.985f to 0.42f
+        ).forEach { (x, th) -> pine(w * x, treeBase, h * th) }
+    }
+}

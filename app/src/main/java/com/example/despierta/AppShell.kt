@@ -118,7 +118,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -341,10 +340,7 @@ private fun BrandBar(onAddAlarm: (() -> Unit)? = null) {
     }
 }
 
-/**
- * Barra de pestañas (2.6): una píldora con los cuatro accesos. La pestaña activa se abre en una
- * cápsula con su nombre y el color de navegación elegido; las demás muestran solo el icono.
- */
+/** Barra de pestañas: cuatro accesos iguales con icono y nombre, como en iOS. */
 @Composable
 private fun AppNavigation(
     selected: AppSection,
@@ -352,41 +348,45 @@ private fun AppNavigation(
     onSelected: (AppSection) -> Unit
 ) {
     val palette = LocalDespiertaPalette.current
+    // Píldora de cristal flotante (2.6): sombra suave, borde con brillo y pestaña activa en relieve.
+    val shape = RoundedCornerShape(31.dp)
     Row(
         Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clip(RoundedCornerShape(32.dp))
-            .background(Color.White.copy(alpha = 0.07f))
-            .padding(6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .padding(horizontal = 14.dp, vertical = 8.dp)
+            .glass(shape, palette.active.last().copy(alpha = 0.84f), elevation = 20.dp)
+            .padding(5.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         AppSection.entries.forEach { section ->
             val isSelected = selected == section
             val background by animateColorAsState(
-                targetValue = if (isSelected) palette.navIconSelected else Color.Transparent,
+                targetValue = if (isSelected) palette.navIconSelected.copy(alpha = 0.22f) else Color.Transparent,
                 animationSpec = tween(motion(200)),
                 label = "nav_background"
             )
-            val tint = if (isSelected) contrastOn(palette.navIconSelected) else palette.navIcon
-            Row(
+            val sheen by animateFloatAsState(
+                targetValue = if (isSelected) 1f else 0f,
+                animationSpec = tween(motion(200)),
+                label = "nav_sheen"
+            )
+            val tint = if (isSelected) palette.navIconSelected else palette.navIcon
+            Column(
                 Modifier
-                    .height(52.dp)
-                    .animateContentSize(tween(motion(200)))
-                    .clip(CircleShape)
-                    .background(background)
+                    .weight(1f)
+                    .height(56.dp)
+                    .glass(RoundedCornerShape(26.dp), background, elevation = 0.dp, sheen = sheen)
                     .selectable(
                         selected = isSelected,
                         onClick = { onSelected(section) },
                         role = Role.Tab
                     )
                     .semantics { contentDescription = section.label }
-                    .testTag("nav_${section.name.lowercase()}")
-                    .padding(horizontal = if (isSelected) 18.dp else 16.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                    .testTag("nav_${section.name.lowercase()}"),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
                 Box {
                     Icon(section.icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
@@ -400,15 +400,13 @@ private fun AppNavigation(
                         )
                     }
                 }
-                if (isSelected) {
-                    Text(
-                        section.label,
-                        modifier = Modifier.padding(start = 8.dp),
-                        style = TextStyle(fontFamily = DisplayFont, fontWeight = FontWeight.Bold, fontSize = 14.sp),
-                        color = tint,
-                        maxLines = 1
-                    )
-                }
+                Text(
+                    section.label,
+                    color = tint,
+                    fontSize = 11.sp,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    maxLines = 1
+                )
             }
         }
     }

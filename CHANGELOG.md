@@ -8,29 +8,47 @@ Cada versión tiene un `versionName` y un `versionCode` único y creciente en
 
 ## 2.6 — versionCode 9 — Rediseño de la pantalla principal (en revisión)
 
-Solo cambia la pantalla de Alarmas y la barra de navegación. Sueño, Turnos, Ajustes, el
-editor y la alarma sonando se rediseñan en la 2.7.
+Solo cambia la pantalla de Alarmas y lo común que necesita. Sueño, Turnos, Ajustes, el editor
+y la alarma sonando se rediseñan en la 2.7.
 
-### Alarmas: "el día en una línea"
-- Un riel vertical recorre la pantalla y ordena lo que importa a quien trabaja por turnos:
-  ahora, descanso estimado y próxima alarma, seguidas del resto de alarmas.
-- La próxima alarma es la protagonista: su hora ocupa el ancho de la pantalla (se ajusta
-  sola si no cabe), con la cuenta atrás ("en 7 h 33 min") y su nombre y programación.
-- "Ahora" con hora y fecha. El descanso estimado es una banda de noche (luna, estrellas y
-  pinos) con la hora de dormir.
-- Cumbres con los colores del tema en el borde superior; la marca y el botón "+" redondo.
-- Resto de alarmas ordenadas por hora, con interruptor y menú "⋯" (Editar y Eliminar, con
-  confirmación y deshacer, como antes).
-- Tipografía propia para cifras y títulos: Bricolage Grotesque (licencia OFL, en
-  `assets/licenses`). El texto corrido sigue con la fuente del sistema.
+### Alarmas
+- Paisaje nocturno a sangre en la cabecera (cielo, resplandor, tres cordilleras, pinos y
+  estrellas) con los colores de cada tema; la luna y el paisaje se desplazan con un paralaje
+  discreto.
+- "DESPIERTA" y el botón "+" sobre el cielo, sin tarjeta.
+- Reloj grande en una tarjeta superpuesta al paisaje, con cifras de ancho fijo.
+- Próxima alarma como fila compacta con cuenta atrás legible ("en 7 h 33 min").
+- Descanso estimado en una tarjeta compacta con el horario de sueño.
+- Alarmas en una lista agrupada: hora, AM/PM, nombre, programación e interruptor; Editar y
+  Eliminar en el menú "⋯" (con confirmación y deshacer, como antes).
 
-### Navegación
-- Píldora de pestañas: la activa se abre en una cápsula con su nombre y el color de
-  navegación elegido en Ajustes; las demás muestran solo el icono.
+### Cristal (revisión tras la primera prueba en el teléfono)
+- Superficies de cristal al estilo iOS: relleno translúcido con luz desde arriba, reflejo en la
+  esquina, borde con brillo (claro arriba-izquierda, reflejo abajo-derecha) y sombra suave.
+  Ya no son tarjetas planas con el mismo contorno de siempre.
+- Reloj, próxima alarma, descanso, lista de alarmas y botón "+" (ahora circular) en cristal.
+- Barra de navegación como píldora de cristal flotante, con la pestaña activa en relieve.
+  Es común a todas las pantallas; el resto de tarjetas pasa a cristal en la 2.7.
+- Paisaje: neblina entre planos y pinos que se disuelven hacia abajo (sin cortes ni troncos
+  sueltos), pinos algo menos oscuros.
 
 ### Común
 - La app dibuja detrás de la barra de estado: desaparece la franja negra superior.
-- Margen superior seguro (barra de estado y recorte de cámara) para las cabeceras.
+- Margen superior seguro (barra de estado y recorte de cámara) para las cabeceras, con un
+  mínimo cuando el sistema no informa del espacio.
+
+### Diseño restaurado
+- Se probó otra composición ("el día en una línea": riel vertical, tipografía Bricolage,
+  navegación en cápsula) y se descartó. Alarmas vuelve al diseño verde (commit `93ff179`).
+  La prueba queda guardada en la rama `ideas/alarmas-riel`.
+- Se conserva de esa etapa: el recorrido de capturas detecta capturas negras y reintenta una
+  sesión que arranca sin interfaz.
+
+### Pendiente (pedido, sin planificar todavía)
+- Más ajustes para los iconos.
+- Configuración de FPS (frecuencia de pantalla).
+- Más tipos de letra a elegir.
+- Fondos a elegir: bosque, montaña, noche con estrellas (el actual sigue como predeterminado).
 
 Sin cambios en el motor de alarmas ni en la programación.
 
