@@ -20,9 +20,10 @@ else
   (cd "$pub" && git checkout -q --orphan "$branch" && git rm -rfq . && git clean -fdxq)
 fi
 
-rm -rf "$pub/capturas"
+rm -rf "$pub/capturas" "$pub/registros"
 mkdir -p "$pub/capturas"
 cp "$dir"/*.png "$pub/capturas/" 2>/dev/null || true
+mkdir -p "$pub/registros" && cp "$dir"/*.txt "$pub/registros/" 2>/dev/null || true
 printf 'candidata %s\nbase %s\n' "$source_sha" "$base_sha" > "$pub/COMMITS"
 cd "$pub"
 git add -A

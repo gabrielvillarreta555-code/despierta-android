@@ -332,8 +332,9 @@ private fun ClockCard(nowMillis: Long, animated: Boolean) {
         ) {
             Text(
                 time,
-                fontSize = 78.sp,
-                lineHeight = 80.sp,
+                // Misma altura de línea que antes (72): la tarjeta no crece ni empuja el resto.
+                fontSize = 76.sp,
+                lineHeight = 72.sp,
                 fontWeight = FontWeight.Light,
                 letterSpacing = (-2.5).sp,
                 // Resplandor del color del tema detrás de las cifras.

@@ -38,7 +38,7 @@ run_with() {
   adb shell pm grant "$pkg" android.permission.POST_NOTIFICATIONS >/dev/null 2>&1 || true
   adb logcat -c || true
   timeout 600 adb shell am instrument -w -r -e etiqueta "$config-$version" \
-    -e class com.example.despierta.VisualValidation "$runner" > "$out/instrument-$config-$version.txt" 2>&1
+    -e class com.example.despierta.VisualValidation,com.example.despierta.StarsAnimationCheck "$runner" > "$out/instrument-$config-$version.txt" 2>&1
   for name in $(adb shell run-as "$pkg" ls files/validacion 2>/dev/null | tr -d '\r'); do
     [[ "$name" == *.png ]] || continue
     adb exec-out run-as "$pkg" cat "files/validacion/$name" > "$out/$name" || rm -f "$out/$name"
@@ -55,6 +55,12 @@ for config in pixel6 telefono; do
     adb shell wm size 1080x2392
     adb shell wm density 440
     sleep 5
+    # El cambio de pantalla reinicia la barra de estado: se vuelve a fijar el modo demostración.
+    demo enter
+    demo clock -e hhmm 2142
+    demo battery -e level 82 -e plugged false
+    demo network -e wifi show -e level 4 -e mobile show -e datatype 4g -e level 4
+    demo notifications -e visible false
   fi
   run_with "$config" antes "$apk_before"
   run_with "$config" despues "$apk_after"

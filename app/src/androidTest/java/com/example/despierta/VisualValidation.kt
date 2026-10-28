@@ -41,7 +41,10 @@ class VisualValidation {
         IdlingPolicies.setIdlingResourceTimeout(25, TimeUnit.SECONDS)
         IdlingPolicies.setMasterPolicyTimeout(30, TimeUnit.SECONDS)
         try {
+            // Precalentamiento: la primera captura tras instalar a veces sale negra.
             seed(withAlarms = true)
+            screen("precalentamiento", ThemeChoice.DEFAULT)
+            File(outputDir, "$label-precalentamiento.png").delete()
             screen("con-alarmas-noche", ThemeChoice.DEFAULT)
             screen("con-alarmas-bosque", ThemeChoice("bosque", null))
             seed(withAlarms = false)
@@ -53,34 +56,15 @@ class VisualValidation {
         }
     }
 
-    /**
-     * Animación de las estrellas: dos fotogramas separados en el tiempo con las animaciones del
-     * sistema activadas y el reloj en vivo. Una captura estática no demuestra una animación; la
-     * comparación de ambos fotogramas (fuera del reloj y de la luna) sí.
-     */
-    @Test
-    fun starsOverTime() {
-        outputDir.mkdirs()
-        val previous = shell("settings get global animator_duration_scale").trim()
-        shell("settings put global animator_duration_scale 1")
-        try {
-            seed(withAlarms = false)
-            saveTheme(ThemeChoice.DEFAULT)
-            val intent = Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            ActivityScenario.launch<MainActivity>(intent).use {
-                // Sin esperas de Compose: con una animación infinita la app nunca queda inactiva.
-                Thread.sleep(5_000)
-                save("anim-a", takeScreenshot())
-                Thread.sleep(1_700)
-                save("anim-b", takeScreenshot())
-            }
-        } finally {
-            shell("settings put global animator_duration_scale ${previous.ifBlank { "0" }}")
-            cleanUp()
+    private fun screen(name: String, theme: ThemeChoice) {
+        repeat(2) { attempt ->
+            if (File(outputDir, "$label-$name.png").exists()) return
+            if (attempt > 0) Thread.sleep(3_000)
+            shot(name, theme)
         }
     }
 
-    private fun screen(name: String, theme: ThemeChoice) {
+    private fun shot(name: String, theme: ThemeChoice) {
         runCatching {
             saveTheme(theme)
             val intent = Intent(context, MainActivity::class.java)
