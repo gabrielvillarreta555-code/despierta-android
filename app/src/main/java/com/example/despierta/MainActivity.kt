@@ -45,6 +45,13 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
         )
         setContent { AlarmApp(resumeGeneration) }
+        // Publicidad: solo desde esta pantalla (nunca desde el motor de alarmas). Desactivada en
+        // las capturas y pruebas con hora fija para que sean reproducibles.
+        AdsManager.start(
+            this,
+            disabledForTests = intent.getBooleanExtra(EXTRA_DISABLE_ADS_FOR_TESTS, false) ||
+                intent.getBooleanExtra(EXTRA_DISABLE_LIVE_CLOCK_FOR_TESTS, false)
+        )
     }
 
     /**
@@ -343,6 +350,7 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
+        internal const val EXTRA_DISABLE_ADS_FOR_TESTS = "com.example.despierta.DISABLE_ADS_FOR_TESTS"
         internal const val EXTRA_DISABLE_LIVE_CLOCK_FOR_TESTS =
             "com.example.despierta.extra.DISABLE_LIVE_CLOCK_FOR_TESTS"
         internal const val EXTRA_FIXED_NOW_MILLIS_FOR_TESTS =

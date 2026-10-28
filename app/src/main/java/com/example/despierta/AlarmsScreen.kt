@@ -227,6 +227,8 @@ internal fun AlarmHome(
                 }
             }
         }
+        // Publicidad experimental: un único banner al final de la lista, debajo de las alarmas.
+        item(key = "ad") { BannerAd(Modifier.padding(top = 8.dp, bottom = 4.dp)) }
     }
 
     pendingDelete?.let { alarm ->

@@ -25,6 +25,15 @@ android {
         versionName = "2.6"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GIT_COMMIT", "\"${buildCommit.take(12)}\"")
+        // Publicidad experimental (rama experimental/admob). Solo identificadores de PRUEBA
+        // oficiales de Google. Los reales se pasarán como propiedades de Gradle cuando existan
+        // (admobAppId / admobBannerId); no hay ningún identificador real en el código.
+        val admobAppId = (project.findProperty("admobAppId") as String?) ?: "ca-app-pub-3940256099942544~3347511713"
+        val admobBannerId = (project.findProperty("admobBannerId") as String?) ?: "ca-app-pub-3940256099942544/6300978111"
+        manifestPlaceholders["admobAppId"] = admobAppId
+        buildConfigField("boolean", "ADS_ENABLED", "true")
+        buildConfigField("boolean", "ADS_TEST_IDS", (project.findProperty("admobBannerId") == null).toString())
+        buildConfigField("String", "ADMOB_BANNER_ID", "\"$admobBannerId\"")
     }
     buildTypes {
         // Versión optimizada para instalar y probar: R8 activado, sin depuración y firmada con la
@@ -58,6 +67,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.core:core-ktx:1.15.0")
+    // Publicidad (experimental): SDK oficial de Google Mobile Ads y consentimiento (UMP).
+    implementation("com.google.android.gms:play-services-ads:25.5.0")
+    implementation("com.google.android.ump:user-messaging-platform:4.0.0")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.12.01"))
