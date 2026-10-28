@@ -2,7 +2,7 @@
 
 Generadas automáticamente en un emulador Android 14 (Pixel 6) con datos ficticios y hora fija.
 
-Commit de origen: `997f64f3d136a20777ab3d371b32a0ee8971000d`
+Commit de origen: `5400c31fb07d3f3a9a9617554609142315f70289`
 
 ## 01-alarmas
 
@@ -19,10 +19,6 @@ Commit de origen: `997f64f3d136a20777ab3d371b32a0ee8971000d`
 ## 04-editor-opciones
 
 ![04-editor-opciones](capturas/04-editor-opciones.png)
-
-## 05-editor-nueva
-
-![05-editor-nueva](capturas/05-editor-nueva.png)
 
 ## 06-sueno
 
@@ -48,10 +44,6 @@ Commit de origen: `997f64f3d136a20777ab3d371b32a0ee8971000d`
 
 ![11-ajustes-apariencia](capturas/11-ajustes-apariencia.png)
 
-## 12-ajustes-notificaciones
-
-![12-ajustes-notificaciones](capturas/12-ajustes-notificaciones.png)
-
 ## 13-tema-amanecer
 
 ![13-tema-amanecer](capturas/13-tema-amanecer.png)
@@ -60,7 +52,15 @@ Commit de origen: `997f64f3d136a20777ab3d371b32a0ee8971000d`
 
 ![14-tema-bosque](capturas/14-tema-bosque.png)
 
-## 15-alarma-sonando
+## 16-paisaje-montana
 
-![15-alarma-sonando](capturas/15-alarma-sonando.png)
+![16-paisaje-montana](capturas/16-paisaje-montana.png)
+
+## 17-paisaje-estrellas
+
+![17-paisaje-estrellas](capturas/17-paisaje-estrellas.png)
+
+## 19-ajustes-paisaje-letra
+
+![19-ajustes-paisaje-letra](capturas/19-ajustes-paisaje-letra.png)
 
