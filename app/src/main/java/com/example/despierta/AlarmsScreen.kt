@@ -235,7 +235,7 @@ private fun HomeHeader(onAddAlarm: () -> Unit) {
                     0f to 70f, 40f to 48f, 70f to 66f, 120f to 22f, 170f to 64f, 205f to 44f,
                     250f to 72f, 300f to 30f, 350f to 62f, 390f to 40f
                 ),
-                color = lerp(palette.hero.first(), palette.sky.last(), 0.6f).copy(alpha = 0.5f)
+                color = lerp(palette.hero.first(), palette.sky.last(), 0.5f).copy(alpha = 0.8f)
             )
             drawPath(
                 ridge(
@@ -339,11 +339,13 @@ private fun RestBand(
                     seed = seed * 1103515245 + 12345
                     return ((seed ushr 8) and 0xFFFF) / 65535f
                 }
-                repeat(34) {
+                // Las estrellas se quedan en el lado de los pinos: detrás del texto estorban.
+                repeat(60) {
                     val x = rand() * size.width
                     val y = rand() * size.height
                     val r = (0.5f + rand() * 1.1f) * density
-                    drawCircle(Color.White.copy(alpha = 0.2f + rand() * 0.55f), r, Offset(x, y))
+                    val a = 0.2f + rand() * 0.55f
+                    if (x > size.width * 0.58f) drawCircle(Color.White.copy(alpha = a), r, Offset(x, y))
                 }
                 // Luna creciente.
                 val c = Offset(30.dp.toPx(), 36.dp.toPx())
@@ -470,7 +472,7 @@ private fun NextHero(
                 Row(verticalAlignment = Alignment.Top) {
                     FitText(
                         text = time,
-                        style = numerals(124.sp, 114.sp, (-7).sp, FontWeight.ExtraBold),
+                        style = numerals(124.sp, 100.sp, (-7).sp, FontWeight.ExtraBold),
                         maxWidth = numeralWidth,
                         color = palette.textPrimary,
                         modifier = Modifier.testTag("alarm_time_${alarm.id}")

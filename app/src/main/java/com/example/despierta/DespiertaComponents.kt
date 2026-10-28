@@ -99,8 +99,9 @@ internal fun despiertaSwitchColors(): SwitchColors {
         checkedTrackColor = palette.button,
         checkedBorderColor = palette.button,
         uncheckedThumbColor = Color(0xFFE9E3FF),
-        uncheckedTrackColor = Color(0xFF3A3160),
-        uncheckedBorderColor = Color(0xFF3A3160)
+        // Del color del tema, no un violeta fijo: en Bosque y Amanecer desentonaba.
+        uncheckedTrackColor = Color.White.copy(alpha = 0.14f),
+        uncheckedBorderColor = Color.White.copy(alpha = 0.2f)
     )
 }
 

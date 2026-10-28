@@ -126,6 +126,7 @@ class ScreenshotTour {
         runCatching {
             val result = action()
             if (result != false) capture(name)
+            failed.remove(name)
         }.onFailure {
             failed += name
             Log.e(TAG, "captura_fallida $name", it)
@@ -134,8 +135,21 @@ class ScreenshotTour {
 
     /** Abre la app con el tema predeterminado; un fallo aquí no detiene el recorrido. */
     private fun session(block: () -> Unit) {
-        runCatching { withApp(ThemeChoice.DEFAULT, block) }
-            .onFailure { Log.e(TAG, "sesion_fallida", it) }
+        // En emuladores lentos una sesión puede arrancar sin interfaz ("No compose hierarchies"):
+        // se reintenta una vez antes de darla por perdida.
+        for (attempt in 0..1) {
+            val before = failed.size
+            runCatching { withApp(ThemeChoice.DEFAULT, block) }
+                .onFailure {
+                    Log.e(TAG, "sesion_fallida", it)
+                    failed += "sesion"
+                }
+            if (failed.size == before) {
+                failed.removeAll { it == "sesion" }
+                return
+            }
+            Thread.sleep(3_000)
+        }
     }
 
     private fun withApp(theme: ThemeChoice, block: () -> Unit) {
@@ -170,15 +184,28 @@ class ScreenshotTour {
         var bitmap: Bitmap? = null
         repeat(ATTEMPTS) {
             if (bitmap == null) {
-                bitmap = instrumentation.uiAutomation.takeScreenshot()
-                if (bitmap == null) Thread.sleep(RETRY_MILLIS)
+                val taken = instrumentation.uiAutomation.takeScreenshot()
+                // Con el emulador recién arrancado la primera captura puede salir totalmente negra.
+                if (taken != null && !isBlank(taken)) bitmap = taken else Thread.sleep(RETRY_MILLIS)
             }
         }
-        val image = bitmap ?: throw AssertionError("UiAutomation no devolvió la captura $name")
+        val image = bitmap ?: throw AssertionError("UiAutomation no devolvió una captura válida de $name")
         FileOutputStream(File(outputDir, "$name.png")).use { out ->
             check(image.compress(Bitmap.CompressFormat.PNG, 100, out)) { "No se pudo guardar $name" }
         }
         captured += name
+    }
+
+    /** Una captura sin ningún píxel encendido: el emulador aún no había dibujado la pantalla. */
+    private fun isBlank(bitmap: Bitmap): Boolean {
+        val stepX = (bitmap.width / 24).coerceAtLeast(1)
+        val stepY = (bitmap.height / 24).coerceAtLeast(1)
+        for (x in 0 until bitmap.width step stepX) {
+            for (y in 0 until bitmap.height step stepY) {
+                if ((bitmap.getPixel(x, y) and 0x00FFFFFF) != 0) return false
+            }
+        }
+        return true
     }
 
     /** Datos ficticios, sin información personal. */
@@ -244,8 +271,8 @@ class ScreenshotTour {
         const val ALARM_GYM = 9003
         const val ALARM_ONCE = 9004
         const val SETTLE_MILLIS = 700L
-        const val RETRY_MILLIS = 600L
-        const val ATTEMPTS = 5
+        const val RETRY_MILLIS = 1_000L
+        const val ATTEMPTS = 8
 
         /** Martes 27 de octubre de 2026, 9:42 PM en la zona del emulador (UTC). */
         val FIXED_NOW_MILLIS: Long =
