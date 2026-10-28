@@ -442,11 +442,11 @@ internal fun NightScene(palette: DespiertaPalette, modifier: Modifier = Modifier
                     brush = treeBrush
                 )
             }
-            // El tronco baja hasta el final del paisaje y se desvanece con el resto.
+            // Tronco corto bajo la copa; se desvanece con la neblina (sin barras en los bordes).
             drawRect(
                 brush = treeBrush,
                 topLeft = Offset(cx - height * 0.03f, baseY - height * 0.1f),
-                size = Size(height * 0.06f, h - (baseY - height * 0.1f))
+                size = Size(height * 0.06f, height * 0.14f)
             )
         }
         // Pinos que enmarcan los lados, sobre el suelo cercano.

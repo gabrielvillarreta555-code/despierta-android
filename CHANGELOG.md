@@ -44,6 +44,14 @@ y la alarma sonando se rediseñan en la 2.7.
 - Se conserva de esa etapa: el recorrido de capturas detecta capturas negras y reintenta una
   sesión que arranca sin interfaz.
 
+### Refinamientos sobre el diseño verde (sin cambiar la composición)
+- Bordes de cristal más finos (1 dp) y con menos brillo; reflejo interior más suave.
+- Las tarjetas se hunden ligeramente al tocarlas (sin animación si se reduce el movimiento).
+- Interruptores apagados del color del tema, sin el violeta fijo ni contorno.
+- Iconos con relieve suave teñido de su propio color y esquinas algo más redondas.
+- Paisaje: los troncos ya no bajan como barras por los bordes de la pantalla.
+- Descanso sin alarma activa dice "Activa una alarma" en vez de repetir "Sin próxima alarma".
+
 ### Pendiente (pedido, sin planificar todavía)
 - Más ajustes para los iconos.
 - Configuración de FPS (frecuencia de pantalla).

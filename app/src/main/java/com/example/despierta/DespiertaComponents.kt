@@ -1,6 +1,14 @@
 package com.example.despierta
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -103,8 +111,9 @@ internal fun despiertaSwitchColors(): SwitchColors {
         checkedTrackColor = palette.button,
         checkedBorderColor = palette.button,
         uncheckedThumbColor = Color(0xFFE9E3FF),
-        uncheckedTrackColor = Color(0xFF3A3160),
-        uncheckedBorderColor = Color(0xFF3A3160)
+        // Del color del tema, no un violeta fijo: en Bosque y Amanecer desentonaba.
+        uncheckedTrackColor = Color.White.copy(alpha = 0.14f),
+        uncheckedBorderColor = Color.Transparent
     )
 }
 
@@ -157,7 +166,7 @@ internal fun Modifier.glass(
         // Luz que baja desde arriba y se oscurece un poco al fondo: da volumen.
         drawRect(
             Brush.verticalGradient(
-                0f to Color.White.copy(alpha = 0.17f * sheen),
+                0f to Color.White.copy(alpha = 0.13f * sheen),
                 0.45f to Color.White.copy(alpha = 0.05f * sheen),
                 1f to Color.Black.copy(alpha = 0.16f * sheen)
             )
@@ -165,7 +174,7 @@ internal fun Modifier.glass(
         // Reflejo suave en la esquina superior izquierda.
         drawRect(
             Brush.radialGradient(
-                colors = listOf(Color.White.copy(alpha = 0.14f * sheen), Color.Transparent),
+                colors = listOf(Color.White.copy(alpha = 0.10f * sheen), Color.Transparent),
                 center = Offset(size.width * 0.12f, 0f),
                 radius = size.maxDimension * 0.75f
             )
@@ -173,12 +182,12 @@ internal fun Modifier.glass(
     }
     .border(
         BorderStroke(
-            1.2.dp,
+            1.dp,
             Brush.linearGradient(
-                0f to Color.White.copy(alpha = 0.55f * sheen),
+                0f to Color.White.copy(alpha = 0.38f * sheen),
                 0.35f to Color.White.copy(alpha = 0.10f * sheen),
                 0.7f to Color.White.copy(alpha = 0.06f * sheen),
-                1f to Color.White.copy(alpha = 0.26f * sheen)
+                1f to Color.White.copy(alpha = 0.16f * sheen)
             )
         ),
         shape
@@ -196,10 +205,29 @@ internal fun GlassCard(
 ) {
     val palette = LocalDespiertaPalette.current
     val shape = RoundedCornerShape(corner)
+    // Al tocarla se hunde un poco (respeta la reducción de movimiento).
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val motionOn = LocalUiOptions.current.motionFactor > 0f
+    val scale by animateFloatAsState(
+        targetValue = if (pressed && motionOn) 0.975f else 1f,
+        animationSpec = tween(140),
+        label = "glass_press"
+    )
     Column(
         modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .glass(shape, palette.card.last().copy(alpha = baseAlpha), elevation)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(interactionSource = interaction, indication = LocalIndication.current, onClick = onClick)
+                } else {
+                    Modifier
+                }
+            )
     ) {
         content()
     }
@@ -219,7 +247,7 @@ internal fun StyledIcon(
     val palette = LocalDespiertaPalette.current
     val style = LocalUiOptions.current.iconStyle
     val color = tint ?: palette.cardIcon
-    val shape = RoundedCornerShape(size * 0.3f)
+    val shape = RoundedCornerShape(size * 0.32f)
     when (style) {
         IconStyle.MINIMAL -> Box(modifier.size(size), contentAlignment = Alignment.Center) {
             Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(size * 0.62f))
@@ -241,10 +269,16 @@ internal fun StyledIcon(
                 .clip(shape)
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color.White.copy(alpha = 0.16f), Color.Black.copy(alpha = 0.22f))
+                        listOf(color.copy(alpha = 0.24f), color.copy(alpha = 0.08f))
                     )
                 )
-                .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)), shape),
+                .border(
+                    BorderStroke(
+                        1.dp,
+                        Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.22f), Color.White.copy(alpha = 0.04f)))
+                    ),
+                    shape
+                ),
             contentAlignment = Alignment.Center
         ) {
             Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(size * 0.55f))

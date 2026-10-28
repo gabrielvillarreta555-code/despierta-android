@@ -408,7 +408,7 @@ private fun RestCard(
             Column(Modifier.weight(1f)) {
                 Text("Descanso estimado", fontSize = 13.sp, color = palette.textSoft)
                 Text(
-                    remaining?.let(::formatSleepDuration) ?: "Sin próxima alarma",
+                    remaining?.let(::formatSleepDuration) ?: "Activa una alarma",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = palette.textPrimary,
