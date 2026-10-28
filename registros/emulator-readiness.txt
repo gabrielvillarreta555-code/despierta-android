@@ -1,0 +1,2 @@
+Esperando a que Android termine de iniciar
+Android disponible tras 3 intentos y 3 comprobaciones estables

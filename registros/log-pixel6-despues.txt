@@ -1,0 +1,2 @@
+--------- beginning of main
+I/DespiertaValidacion( 9844): capturada pixel6-despues-precalentamiento

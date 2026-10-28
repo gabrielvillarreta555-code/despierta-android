@@ -1,0 +1,8 @@
+INSTRUMENTATION_STATUS: class=com.example.despierta.VisualValidation
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+com.example.despierta.VisualValidation:
+INSTRUMENTATION_STATUS: test=staticScreens
+INSTRUMENTATION_STATUS_CODE: 1
