@@ -1,5 +1,4 @@
 --------- beginning of main
-I/DespiertaAnuncios(15373): consent_update_error code=2
-I/DespiertaAnuncios(15373): memoria_pss_kb sin_anuncios=-1 con_anuncios=-1 diferencia=0 banner_cargado=false eventos=[consent_update_error code=2]
-I/DespiertaAnuncios(15373): sdk_initialized
-I/DespiertaAnuncios(15373): banner_requested
+I/DespiertaAnuncios(15486): consent_update_error code=2
+I/DespiertaAnuncios(15486): sdk_initialized
+I/DespiertaAnuncios(15486): banner_requested
