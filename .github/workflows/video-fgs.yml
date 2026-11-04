@@ -66,6 +66,7 @@ jobs:
           ffmpeg -loglevel error -i Despierta-2.9-servicio-primer-plano.mp4 -vf "fps=1/6,scale=270:-1" cuadros/c_%03d.png
           ffmpeg -loglevel error -pattern_type glob -i 'cuadros/c_*.png' -vf "tile=8x4:padding=4" -frames:v 1 hoja-de-contacto.png || true
           echo "::notice title=Video::$(printf '%.0f' "$dur") s · $(stat -c %s Despierta-2.9-servicio-primer-plano.mp4) bytes · $(ls fgs_*.mp4 | wc -l) tramo(s)"
+          tail -n 25 logcat-alarma.txt | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"}{print}' | sed 's/^/::notice title=Logcat::/'; echo
           sed 's/%/%25/g' registro.txt | awk 'BEGIN{ORS="%0A"}{print}' | sed 's/^/::notice title=Registro::/'; echo
       - name: Publicar el video
         if: always()
@@ -79,7 +80,7 @@ jobs:
             video/*.txt
           retention-days: 30
       - name: Publicar en la rama video-fgs
-        if: success()
+        if: always()
         shell: bash
         run: |
           set -e
@@ -88,6 +89,7 @@ jobs:
           pub="$RUNNER_TEMP/pub"
           git worktree add -q --detach "$pub"
           cd "$pub" && git checkout -q --orphan video-fgs && git rm -rfq . && git clean -fdxq
+          [ -f "$GITHUB_WORKSPACE/video/Despierta-2.9-servicio-primer-plano.mp4" ] || exit 0
           cp -r "$GITHUB_WORKSPACE"/video/Despierta-2.9-servicio-primer-plano.mp4 "$GITHUB_WORKSPACE"/video/hoja-de-contacto.png "$GITHUB_WORKSPACE"/video/cuadros "$GITHUB_WORKSPACE"/video/*.txt .
           echo "$GITHUB_SHA" > SOURCE_COMMIT
           git add -A && git commit -q -m "Video FGS de ${APP_COMMIT:0:12}" && git push -q -f origin video-fgs

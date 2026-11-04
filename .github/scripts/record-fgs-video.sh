@@ -70,8 +70,12 @@ adb shell input keyevent KEYCODE_MOVE_END
 for _ in $(seq 1 12); do adb shell input keyevent KEYCODE_DEL; done
 adb shell input text "$target"
 sleep 2
+dump > "$out/ui-antes-de-guardar.xml"
 tap text "Guardar" || exit 1
 sleep 4
+dump > "$out/ui-tras-guardar.xml"
+adb shell dumpsys alarm | grep -B2 -A6 "$pkg" | head -40 > "$out/alarmas-programadas.txt" || true
+say "alarmas del sistema para la app: $(grep -c "$pkg" "$out/alarmas-programadas.txt")"
 say "alarma guardada; la app pasa a segundo plano"
 adb shell input keyevent KEYCODE_HOME
 
