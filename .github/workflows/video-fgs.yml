@@ -90,6 +90,6 @@ jobs:
           git worktree add -q --detach "$pub"
           cd "$pub" && git checkout -q --orphan video-fgs && git rm -rfq . && git clean -fdxq
           [ -f "$GITHUB_WORKSPACE/video/Despierta-2.9-servicio-primer-plano.mp4" ] || exit 0
-          cp -r "$GITHUB_WORKSPACE"/video/Despierta-2.9-servicio-primer-plano.mp4 "$GITHUB_WORKSPACE"/video/hoja-de-contacto.png "$GITHUB_WORKSPACE"/video/cuadros "$GITHUB_WORKSPACE"/video/*.txt .
+          cp -r "$GITHUB_WORKSPACE"/video/Despierta-2.9-servicio-primer-plano.mp4 "$GITHUB_WORKSPACE"/video/hoja-de-contacto.png "$GITHUB_WORKSPACE"/video/cuadros "$GITHUB_WORKSPACE"/video/*.txt "$GITHUB_WORKSPACE"/video/*.xml .
           echo "$GITHUB_SHA" > SOURCE_COMMIT
           git add -A && git commit -q -m "Video FGS de ${APP_COMMIT:0:12}" && git push -q -f origin video-fgs
