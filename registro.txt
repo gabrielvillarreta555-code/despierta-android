@@ -1,0 +1,23 @@
+[22:13:10] dispositivo: 14 (API 34)
+[22:13:10] app: versionCode=12 minSdk=26 targetSdk=36 versionName=2.9
+[22:13:13] grabación iniciada
+[22:13:15] abrir Despierta
+[22:13:30] toque en «Allow» (540 1304)
+[22:13:35] toque en «Nueva alarma» (970 215)
+[22:13:41] toque en «Introducir hora manualmente» (540 1130)
+[22:13:42] hora del dispositivo 22:13:42 → alarma a las 22:15
+[22:13:46] toque en «android.widget.EditText» (539 1330)
+[22:14:00] se escribe la hora «10:15 PM»
+[22:14:12] toque en «Guardar» (929 212)
+[22:14:18] alarmas del sistema para la app: 6
+[22:14:18] alarma guardada; la app pasa a segundo plano
+[22:15:00] la alarma está sonando: true
+  * ServiceRecord{e74b13d u0 com.bluelabstudios.despierta/com.example.despierta.AlarmService}
+    intent={act=com.example.despierta.action.RING cmp=com.bluelabstudios.despierta/com.example.despierta.AlarmService}
+    infoAllowStartForeground=[callingPackage: com.bluelabstudios.despierta; callingUid: 10192; uidState: RCVR; uidBFSL: n/a; intent: Intent { act=com.example.despierta.action.RING cmp=com.bluelabstudios.despierta/com.example.despierta.AlarmService (has extras) }; code:ALARM_MANAGER_ALARM_CLOCK; tempAllowListReason:<18c86d0 com.example.despierta.action.FIRE_ALARM/u0,reasonCode:ALARM_MANAGER_ALARM_CLOCK,duration:10000,callingUid:10192>; targetSdkVersion:36; callerTargetSdkVersion:36; startForegroundCount:0; bindFromPackage:null: isBindService:false]
+    isForeground=true foregroundId=41001 types=00000002 foregroundNoti=Notification(channel=ringing_alarms_v2 shortcut=null contentView=null vibrate=null sound=null defaults=0x0 flags=0xea color=0x00000000 category=alarm actions=2 vis=PUBLIC)
+      intent=Intent { act=com.example.despierta.action.RING cmp=com.bluelabstudios.despierta/com.example.despierta.AlarmService (has extras) }
+[22:15:09] abrir la barra de notificaciones
+[22:15:16] toque en «Detener» (646 833)
+[22:15:20] alarma detenida: el servicio en primer plano terminó
+[22:15:25] tramo fgs_0.mp4: 11460948 bytes

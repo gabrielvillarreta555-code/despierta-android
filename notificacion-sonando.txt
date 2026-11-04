@@ -1,0 +1,29 @@
+    NotificationRecord(0x0023a397: pkg=com.bluelabstudios.despierta user=UserHandle{0} id=41001 tag=null importance=4 key=0|com.bluelabstudios.despierta|41001|null|10192: Notification(channel=ringing_alarms_v2 shortcut=null contentView=null vibrate=null sound=null defaults=0x0 flags=0xea color=0x00000000 category=alarm actions=2 vis=PUBLIC))
+      uid=10192 userId=0
+      opPkg=com.bluelabstudios.despierta
+      icon=Icon(typ=RESOURCE pkg=com.bluelabstudios.despierta id=0x7f050018)
+      flags=0xea
+      originalFlags=0xca
+      pri=2
+      key=0|com.bluelabstudios.despierta|41001|null|10192
+      seen=true
+      groupKey=0|com.bluelabstudios.despierta|41001|null|10192
+      notification=
+            fullscreenIntent=PendingIntent{8ced984: PendingIntentRecord{7a5db56 com.bluelabstudios.despierta startActivity (allowlist: a9f6c74:+30s0ms/0/NOTIFICATION_SERVICE/NotificationManagerService)}}
+            contentIntent=PendingIntent{671056d: PendingIntentRecord{7a5db56 com.bluelabstudios.despierta startActivity (allowlist: a9f6c74:+30s0ms/0/NOTIFICATION_SERVICE/NotificationManagerService)}}
+            deleteIntent=null
+            number=0
+            groupAlertBehavior=0
+            when=1793830500057
+            tickerText=null
+            vis=1
+            contentView=null
+            bigContentView=null
+            headsUpContentView=null
+            color=0x00000000
+            timeout=unknown
+            actions={
+                [0] "Posponer 5 min" -> PendingIntent{d14b5a2: PendingIntentRecord{b99318 com.bluelabstudios.despierta startService (allowlist: a9f6c74:+30s0ms/0/NOTIFICATION_SERVICE/NotificationManagerService)}}
+                [1] "Detener" -> PendingIntent{e74e233: PendingIntentRecord{6652171 com.bluelabstudios.despierta startService (allowlist: a9f6c74:+30s0ms/0/NOTIFICATION_SERVICE/NotificationManagerService)}}
+              }
+            extras={

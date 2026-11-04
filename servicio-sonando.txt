@@ -1,0 +1,62 @@
+ACTIVITY MANAGER SERVICES (dumpsys activity services)
+  User 0 active services:
+  * ServiceRecord{e74b13d u0 com.bluelabstudios.despierta/com.example.despierta.AlarmService}
+    intent={act=com.example.despierta.action.RING cmp=com.bluelabstudios.despierta/com.example.despierta.AlarmService}
+    packageName=com.bluelabstudios.despierta
+    processName=com.bluelabstudios.despierta
+    baseDir=/data/app/~~i_bBXsjqCg5omXTz2X17-A==/com.bluelabstudios.despierta-lGS287gsjTS6IRawCVrJSw==/base.apk
+    dataDir=/data/user/0/com.bluelabstudios.despierta
+    app=ProcessRecord{f23508b 4506:com.bluelabstudios.despierta/u0a192}
+    mAllowWhileInUsePermissionInFgsReason=DENIED
+    allowUiJobScheduling=false
+    recentCallingPackage=com.bluelabstudios.despierta
+    recentCallingUid=10192
+    allowStartForeground=ALARM_MANAGER_ALARM_CLOCK
+    startForegroundCount=1
+    infoAllowStartForeground=[callingPackage: com.bluelabstudios.despierta; callingUid: 10192; uidState: RCVR; uidBFSL: n/a; intent: Intent { act=com.example.despierta.action.RING cmp=com.bluelabstudios.despierta/com.example.despierta.AlarmService (has extras) }; code:ALARM_MANAGER_ALARM_CLOCK; tempAllowListReason:<18c86d0 com.example.despierta.action.FIRE_ALARM/u0,reasonCode:ALARM_MANAGER_ALARM_CLOCK,duration:10000,callingUid:10192>; targetSdkVersion:36; callerTargetSdkVersion:36; startForegroundCount:0; bindFromPackage:null: isBindService:false]
+    isForeground=true foregroundId=41001 types=00000002 foregroundNoti=Notification(channel=ringing_alarms_v2 shortcut=null contentView=null vibrate=null sound=null defaults=0x0 flags=0xea color=0x00000000 category=alarm actions=2 vis=PUBLIC)
+    createTime=-4s880ms startingBgTimeout=--
+    lastActivity=-4s880ms restartTime=-4s880ms createdFromFg=false
+    startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=1
+ startCommandResult=3
+    Delivered Starts:
+    #0 id=1 dur=-4s875ms dxc=1
+      intent=Intent { act=com.example.despierta.action.RING cmp=com.bluelabstudios.despierta/com.example.despierta.AlarmService (has extras) }
+
+  * ServiceRecord{bd59f64 u0 com.bluelabstudios.despierta/org.chromium.content.app.SandboxedProcessService0:0}
+    intent={cmp=com.bluelabstudios.despierta/org.chromium.content.app.SandboxedProcessService0:0}
+    packageName=com.bluelabstudios.despierta
+    processName=com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0
+    baseDir=/data/app/~~aUsNnuDVBQSf22PKxDhoIw==/com.google.android.webview-CQT3XYm3hkveXGcX1h3vsw==/WebViewGoogle.apk
+    dataDir=/data/user/0/com.google.android.webview
+    app=ProcessRecord{d258a7d 4802:com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0a192i0}
+    isolationHostProc=ProcessRecord{d258a7d 4802:com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0a192i0}
+    mAllowWhileInUsePermissionInFgsReason=PROC_STATE_TOP
+    allowUiJobScheduling=false
+    recentCallingPackage=com.bluelabstudios.despierta
+    recentCallingUid=10192
+    allowStartForeground=PROC_STATE_TOP
+    startForegroundCount=0
+    infoAllowStartForeground=[callingPackage: com.bluelabstudios.despierta; callingUid: 10192; uidState: TOP ; uidBFSL: [BFSL]; intent: Intent { cmp=com.bluelabstudios.despierta/org.chromium.content.app.SandboxedProcessService0:0 (has extras) }; code:PROC_STATE_TOP; tempAllowListReason:<null>; targetSdkVersion:34; callerTargetSdkVersion:36; startForegroundCount:0; bindFromPackage:null: isBindService:true]
+    createTime=-1m38s294ms startingBgTimeout=--
+    lastActivity=-1m33s743ms restartTime=-1m38s79ms createdFromFg=true
+    Bindings:
+    * IntentBindRecord{150331 CREATE}:
+      intent={cmp=com.bluelabstudios.despierta/org.chromium.content.app.SandboxedProcessService0:0}
+      binder=android.os.BinderProxy@8d17a16
+      requested=true received=true hasBound=true doRebind=false
+      * Client AppBindRecord{767df97 ProcessRecord{f23508b 4506:com.bluelabstudios.despierta/u0a192}}
+        Per-process Connections:
+          ConnectionRecord{b3e24e u0 CR IMP com.bluelabstudios.despierta/org.chromium.content.app.SandboxedProcessService0:0:@28b8949 flags=0x80000041}
+          ConnectionRecord{34bde40 u0 CR WPRI com.bluelabstudios.despierta/org.chromium.content.app.SandboxedProcessService0:0:@aab15c3 flags=0x80000021}
+    All Connections:
+      ConnectionRecord{b3e24e u0 CR IMP com.bluelabstudios.despierta/org.chromium.content.app.SandboxedProcessService0:0:@28b8949 flags=0x80000041}
+      ConnectionRecord{34bde40 u0 CR WPRI com.bluelabstudios.despierta/org.chromium.content.app.SandboxedProcessService0:0:@aab15c3 flags=0x80000021}
+
+  Connection bindings to services:
+  * ConnectionRecord{b3e24e u0 CR IMP com.bluelabstudios.despierta/org.chromium.content.app.SandboxedProcessService0:0:@28b8949 flags=0x80000041}
+    binding=AppBindRecord{767df97 com.bluelabstudios.despierta/org.chromium.content.app.SandboxedProcessService0:0:com.bluelabstudios.despierta}
+    conn=android.os.BinderProxy@28b8949 flags=0x80000041
+  * ConnectionRecord{34bde40 u0 CR WPRI com.bluelabstudios.despierta/org.chromium.content.app.SandboxedProcessService0:0:@aab15c3 flags=0x80000021}
+    binding=AppBindRecord{767df97 com.bluelabstudios.despierta/org.chromium.content.app.SandboxedProcessService0:0:com.bluelabstudios.despierta}
+    conn=android.os.BinderProxy@aab15c3 flags=0x80000021

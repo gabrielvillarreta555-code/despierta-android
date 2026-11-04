@@ -1,0 +1,17 @@
+--------- beginning of main
+11-04 22:13:19.405 I/DespiertaAlarm( 4506): refresh_rate choice=MAXIMA hz=60.000004 actual=60.000004
+11-04 22:13:19.535 I/DespiertaAlarm( 4506): reconcile_complete count=0
+11-04 22:13:25.862 I/DespiertaAlarm( 4506): refresh_rate choice=MAXIMA hz=60.000004 actual=60.000004
+11-04 22:13:30.267 I/DespiertaAlarm( 4506): reconcile_complete count=0
+11-04 22:14:11.924 I/DespiertaAlarm( 4506): schedule_exact id=897348605 triggerAt=1793830500000 snooze=false
+11-04 22:15:00.022 I/DespiertaAlarm( 4506): receiver_fired id=897348605 snooze=false receivedAt=1793830500022
+11-04 22:15:00.028 I/DespiertaAlarm( 4506): launch_wakelock_acquired timeout=30000
+11-04 22:15:00.034 I/DespiertaAlarm( 4506): service_start_requested id=897348605
+11-04 22:15:00.053 I/DespiertaAlarm( 4506): service_created sdk=34
+11-04 22:15:00.145 I/DespiertaAlarm( 4506): audio_focus_requested result=1 id=897348605
+11-04 22:15:00.154 I/DespiertaAlarm( 4506): vibration_started available=true
+11-04 22:15:00.166 I/DespiertaAlarm( 4506): alarm_volume id=897348605 current=6 max=7
+11-04 22:15:00.193 I/DespiertaAlarm( 4506): sound_started id=897348605 fallback=false uri=content://settings/system/alarm_alert
+11-04 22:15:00.194 I/DespiertaAlarm( 4506): ring_started id=897348605 customSound=true vibrate=true
+11-04 22:15:16.032 I/DespiertaAlarm( 4506): ring_stopped id=897348605 reason=user_stop
+11-04 22:15:16.073 I/DespiertaAlarm( 4506): service_destroyed id=-1
