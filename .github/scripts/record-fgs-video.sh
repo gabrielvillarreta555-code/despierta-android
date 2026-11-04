@@ -68,7 +68,16 @@ tap class "android.widget.EditText" 0 || exit 1
 sleep 1
 adb shell input keyevent KEYCODE_MOVE_END
 for _ in $(seq 1 12); do adb shell input keyevent KEYCODE_DEL; done
-adb shell input text "$target"
+# La app sigue el formato del sistema: si el campo pide AM/PM, se escribe en 12 horas.
+if find_node text "Hora (HH:MM AM/PM)" >/dev/null; then
+  th=$((total / 60)); per=AM; [ "$th" -ge 12 ] && per=PM
+  th=$((th % 12)); [ "$th" -eq 0 ] && th=12
+  typed="$(printf '%02d:%02d %s' "$th" $((total % 60)) "$per")"
+else
+  typed="$target"
+fi
+say "se escribe la hora «$typed»"
+adb shell input text "${typed// /%s}"
 sleep 2
 dump > "$out/ui-antes-de-guardar.xml"
 tap text "Guardar" || exit 1
