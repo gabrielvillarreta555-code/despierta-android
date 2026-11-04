@@ -1,0 +1,93 @@
+name: Video del servicio en primer plano
+
+# Graba en un emulador Android 14 el uso real de FOREGROUND_SERVICE_MEDIA_PLAYBACK de Despierta
+# (programar alarma → segundo plano → suena → detener) para la declaración de Google Play.
+on:
+  push:
+    branches: [ 'video/**' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  APP_COMMIT: 8be24840148c14183e069c9c2c1c5e951f28ca94
+
+jobs:
+  grabar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Código de la app (Despierta 2.9, commit exacto)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.APP_COMMIT }}
+          path: app-src
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compilar APK
+        working-directory: app-src
+        run: env -u GITHUB_SHA ./gradlew --no-daemon assembleDebug --stacktrace
+      - name: Activar KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Grabar en Android 14 (Pixel 6)
+        uses: ReactiveCircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-boot-timeout: 900
+          script: |
+            mkdir -p video
+            bash .github/scripts/wait-for-android.sh video/arranque.txt
+            bash .github/scripts/install-apk-with-retry.sh app-src/app/build/outputs/apk/debug/app-debug.apk video/instalacion.txt
+            bash .github/scripts/record-fgs-video.sh video
+      - name: Unir tramos y preparar el video
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y -qq ffmpeg >/dev/null
+          cd video
+          ls fgs_*.mp4 >/dev/null 2>&1 || { echo "::error title=Video::No se grabó ningún tramo"; exit 1; }
+          for f in $(ls fgs_*.mp4 | sort -V); do echo "file '$f'"; done > tramos.txt
+          # Unión sin recodificar: los fotogramas quedan tal cual los grabó Android.
+          ffmpeg -loglevel error -f concat -safe 0 -i tramos.txt -c copy Despierta-2.9-servicio-primer-plano.mp4
+          dur="$(ffprobe -v error -show_entries format=duration -of csv=p=0 Despierta-2.9-servicio-primer-plano.mp4)"
+          mkdir -p cuadros
+          ffmpeg -loglevel error -i Despierta-2.9-servicio-primer-plano.mp4 -vf "fps=1/6,scale=270:-1" cuadros/c_%03d.png
+          ffmpeg -loglevel error -pattern_type glob -i 'cuadros/c_*.png' -vf "tile=8x4:padding=4" -frames:v 1 hoja-de-contacto.png || true
+          echo "::notice title=Video::$(printf '%.0f' "$dur") s · $(stat -c %s Despierta-2.9-servicio-primer-plano.mp4) bytes · $(ls fgs_*.mp4 | wc -l) tramo(s)"
+          sed 's/%/%25/g' registro.txt | awk 'BEGIN{ORS="%0A"}{print}' | sed 's/^/::notice title=Registro::/'; echo
+      - name: Publicar el video
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Despierta-2.9-video-servicio-primer-plano
+          path: |
+            video/Despierta-2.9-servicio-primer-plano.mp4
+            video/hoja-de-contacto.png
+            video/cuadros/
+            video/*.txt
+          retention-days: 30
+      - name: Publicar en la rama video-fgs
+        if: success()
+        shell: bash
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          pub="$RUNNER_TEMP/pub"
+          git worktree add -q --detach "$pub"
+          cd "$pub" && git checkout -q --orphan video-fgs && git rm -rfq . && git clean -fdxq
+          cp -r "$GITHUB_WORKSPACE"/video/Despierta-2.9-servicio-primer-plano.mp4 "$GITHUB_WORKSPACE"/video/hoja-de-contacto.png "$GITHUB_WORKSPACE"/video/cuadros "$GITHUB_WORKSPACE"/video/*.txt .
+          echo "$GITHUB_SHA" > SOURCE_COMMIT
+          git add -A && git commit -q -m "Video FGS de ${APP_COMMIT:0:12}" && git push -q -f origin video-fgs
